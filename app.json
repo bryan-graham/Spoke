@@ -191,7 +191,7 @@
       }
     },
     "mailgun:starter",
-    "heroku-redis:hobby-dev",
+    "heroku-redis:mini",
     "bucketeer:hobbyist"
   ],
   "formation": {
