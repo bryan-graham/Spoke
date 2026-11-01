@@ -502,6 +502,9 @@ Built in Shore, with its own tests:
 2. **Text consent rule for loads:** "opted out or suppressed means excluded," or also
    require a text opt-in?
 3. **Custom fields in v1:** preferred name and city only, or more?
-4. **Message text in the feed:** Shore receives full message text. Is that wanted on
-   timelines, or should the feed carry only direction, status and time?
-5. **Poll interval:** 30–60 seconds for the feeds and hourly reconciliation, or different?
+4. **Poll interval:** 30–60 seconds for the feeds and hourly reconciliation, or different?
+
+## Decisions made
+
+- **Message content (2026-11-01):** Shore receives each message's full text, direction
+  (`isFromContact`), send status and time, as in `GET /messages`.
