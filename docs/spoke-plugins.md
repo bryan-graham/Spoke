@@ -214,7 +214,6 @@ contact can't be used in the script at all.
 |---|---|---|
 | `preferredName` | yes | What the person likes to be called; falls back to first name. |
 | `city` | yes | City of the person's address. |
-| `zip` | yes | Also sent as a custom field so scripts can use `{zip}`. (The standard `zip` column sets the timezone and isn't usable in scripts.) |
 | `pollingPlaceName` | yes, often empty | Name of the person's election-day voting location. |
 | `pollingPlaceAddress` | yes, often empty | Its street address. |
 | `precinct` | yes, often empty | Precinct name or code. |
@@ -223,7 +222,9 @@ contact can't be used in the script at all.
 
 The voting-location fields are in v1 even though Shore may not have the data yet, so the
 contract and scripts don't change when it does; until then they're `""`. Script writers
-should only use them in campaigns whose segments Shore fills them for. Because keys are
+should only use them in campaigns whose segments Shore fills them for. ZIP isn't a custom
+field: it's the standard `zip` column, which sets the contact's timezone and is already
+usable in scripts as `{zip}`. Because keys are
 fixed per Shore release, adding a field later is a contract change on Shore's side only; the
 extension passes `customFields` through as-is.
 
