@@ -201,8 +201,31 @@ Idempotent: the same `spokeJobId` returns the same `loadId`. Shore audits each l
 }
 ```
 
-`cell` is E.164; `zip` is five digits or null; `customFields` is a short list Shore owns and
-documents; `limit` is at most 5000. Pages expire an hour after the load starts.
+`cell` is E.164; `zip` is five digits or null; `limit` is at most 5000. Pages expire an
+hour after the load starts.
+
+**`customFields`** is a fixed list Shore owns and documents. Spoke learns a campaign's
+custom field names from its **first** contact only (`dbCustomFields` in
+`src/server/models/cacheable_queries/campaign.js`), so every contact in a load carries
+**every key**, with `""` when Shore has no value. Otherwise a field missing from the first
+contact can't be used in the script at all.
+
+| Field | v1 | Meaning |
+|---|---|---|
+| `preferredName` | yes | What the person likes to be called; falls back to first name. |
+| `city` | yes | City of the person's address. |
+| `zip` | yes | Also sent as a custom field so scripts can use `{zip}`. (The standard `zip` column sets the timezone and isn't usable in scripts.) |
+| `pollingPlaceName` | yes, often empty | Name of the person's election-day voting location. |
+| `pollingPlaceAddress` | yes, often empty | Its street address. |
+| `precinct` | yes, often empty | Precinct name or code. |
+| `earlyVoteInfo` | later | Nearest early-vote site and hours. |
+| `volunteerRoles` | later | Short, comma-separated list for volunteer recruitment scripts. |
+
+The voting-location fields are in v1 even though Shore may not have the data yet, so the
+contract and scripts don't change when it does; until then they're `""`. Script writers
+should only use them in campaigns whose segments Shore fills them for. Because keys are
+fixed per Shore release, adding a field later is a contract change on Shore's side only; the
+extension passes `customFields` through as-is.
 
 ### The loader
 
@@ -496,15 +519,18 @@ Built in Shore, with its own tests:
 - **Failure handling follows the `redash` loader**, which calls `failedContactLoad`; the
   CiviCRM loader doesn't.
 
-## Decisions needed
-
-1. **Signing:** one shared HMAC key per campaign, rather than separate tokens per direction.
-2. **Text consent rule for loads:** "opted out or suppressed means excluded," or also
-   require a text opt-in?
-3. **Custom fields in v1:** preferred name and city only, or more?
-4. **Poll interval:** 30–60 seconds for the feeds and hourly reconciliation, or different?
-
 ## Decisions made
+
+- **Signing (2026-11-01):** one shared HMAC key per Shore campaign, used in both directions.
+  A Shore campaign maps to one Spoke organization, and the key is stored on that
+  organization.
+- **Text consent for loads (2026-11-01):** no opt-in required; this is peer-to-peer texting.
+  A load excludes anyone opted out or suppressed, as Shore decides.
+- **Custom fields (2026-11-01):** the v1 list in Part 1, including voting-location fields
+  sent empty until Shore has the data.
+- **Poll interval (2026-11-01):** Shore's setting, not part of Spoke's design. The
+  endpoints are cheap, safe to repeat and independent of how often they're called; the
+  15-second settle window and page limits don't depend on it. Start at 30–60 seconds.
 
 - **Message content (2026-11-01):** Shore receives each message's full text, direction
   (`isFromContact`), send status and time, as in `GET /messages`.
