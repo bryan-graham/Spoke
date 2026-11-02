@@ -1,7 +1,7 @@
 import { r, cacheableData } from "../../../../server/models";
 import { getFormattedPhoneNumber } from "../../../../lib/phone-format";
 
-// POST /integrations/shore/:organizationId/opt-outs
+// POST /integrations/shore/v1/:organizationId/opt-outs
 //
 // Shore tells Spoke that numbers have opted out (or the person was suppressed)
 // through another channel. Each number is recorded through Spoke's own

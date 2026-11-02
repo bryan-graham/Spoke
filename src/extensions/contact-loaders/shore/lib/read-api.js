@@ -1,6 +1,6 @@
 import { r } from "../../../../server/models";
 
-// Read endpoints Shore polls (GET /integrations/shore/:organizationId/...).
+// Read endpoints Shore polls (GET /integrations/shore/v1/:organizationId/...).
 //
 // Feeds page on each table's primary key (afterId → nextAfterId) in ascending
 // order, scoped to the organization. Rows newer than settleSeconds are held

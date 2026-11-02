@@ -2,7 +2,7 @@ import { cacheableData } from "../../../../server/models";
 import { getShoreConfig } from "./config";
 import { verifySignature, TIMESTAMP_HEADER, SIGNATURE_HEADER } from "./signing";
 
-// Express middleware for every /integrations/shore/:organizationId route.
+// Express middleware for every /integrations/shore/v1/:organizationId route.
 // Order matters:
 //   1. 404 unless the organization exists and has Shore configured, so
 //      unconfigured instances expose nothing.

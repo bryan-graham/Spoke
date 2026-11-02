@@ -17,6 +17,15 @@ import {
   toContactRow
 } from "../../../../src/extensions/contact-loaders/shore";
 import { verifySignature } from "../../../../src/extensions/contact-loaders/shore/lib/signing";
+import { expectValid, schemaFor } from "./contract";
+
+// The fake Shore below only sends bodies that match the published contract
+// (docs/shore-contract.openapi.json), except where a test deliberately sends
+// bad data to check Spoke copes.
+const shoreSays = (schemaName, body) => {
+  expectValid(schemaFor(schemaName), body);
+  return body;
+};
 
 const KEY = "test-integration-key-0123456789abcdef";
 const SHORE = "https://shore.test";
@@ -40,7 +49,13 @@ const contact = (i, extra = {}) => ({
   lastName: `Last${i}`,
   cell: `+1515555${String(1000 + i)}`,
   zip: "22031",
-  customFields: { preferredName: `Pref${i}`, city: "Fairfax", precinct: "" },
+  customFields: {
+    preferredName: `Pref${i}`,
+    city: "Fairfax",
+    pollingPlaceName: "",
+    pollingPlaceAddress: "",
+    precinct: ""
+  },
   ...extra
 });
 
@@ -104,7 +119,7 @@ describe("shore contact loader", () => {
           return signedOk(this, uri, body)
             ? [
                 200,
-                {
+                shoreSays("SegmentList", {
                   segments: [
                     {
                       id: "seg-1",
@@ -114,7 +129,7 @@ describe("shore contact loader", () => {
                       textableCount: 412
                     }
                   ]
-                }
+                })
               ]
             : [401, { error: "unauthorized" }];
         });
@@ -197,26 +212,34 @@ describe("shore contact loader", () => {
         .reply(function(uri, body) {
           startBody = body;
           return signedOk(this, uri, body)
-            ? [200, { loadId: "load-1", count: 4 }]
+            ? [
+                200,
+                shoreSays("StartLoadResponse", { loadId: "load-1", count: 4 })
+              ]
             : [401, {}];
         })
         .get(`${API}/loads/load-1/contacts`)
         .query({ limit: "1000" })
+        // Deliberately off-contract (a bad cell) to check Spoke skips it.
         .reply(200, {
           contacts: [contact(1), contact(2, { cell: "bad" })],
           nextCursor: "c2"
         })
         .get(`${API}/loads/load-1/contacts`)
         .query({ cursor: "c2", limit: "1000" })
-        .reply(200, {
-          // contact 1 again with a new name: last row wins
-          contacts: [contact(3), contact(1, { firstName: "Newer" })],
-          nextCursor: null
-        });
+        .reply(
+          200,
+          shoreSays("ContactPage", {
+            // contact 1 again with a new name: last row wins
+            contacts: [contact(3), contact(1, { firstName: "Newer" })],
+            nextCursor: null
+          })
+        );
 
       const job = await makeJob({ segmentId: "seg-1", segmentName: "Pledged" });
       await processContactLoad(job, null, organization);
 
+      expectValid(schemaFor("StartLoadRequest"), startBody);
       expect(startBody).toEqual({
         spokeCampaignId: Number(testCampaign.id),
         spokeCampaignTitle: expect.any(String),
@@ -230,6 +253,8 @@ describe("shore contact loader", () => {
       expect(JSON.parse(rows[0].custom_fields)).toEqual({
         preferredName: "Pref3",
         city: "Fairfax",
+        pollingPlaceName: "",
+        pollingPlaceAddress: "",
         precinct: ""
       });
       const admin = await adminRow();
@@ -250,13 +275,19 @@ describe("shore contact loader", () => {
     it("stops at maxContacts", async () => {
       nock(SHORE)
         .post(`${API}/segments/seg-1/loads`)
-        .reply(200, { loadId: "load-2", count: 3 })
+        .reply(
+          200,
+          shoreSays("StartLoadResponse", { loadId: "load-2", count: 3 })
+        )
         .get(`${API}/loads/load-2/contacts`)
         .query({ limit: "2" })
-        .reply(200, {
-          contacts: [contact(1), contact(2), contact(3)],
-          nextCursor: "more"
-        });
+        .reply(
+          200,
+          shoreSays("ContactPage", {
+            contacts: [contact(1), contact(2), contact(3)],
+            nextCursor: "more"
+          })
+        );
       const job = await makeJob({ segmentId: "seg-1", segmentName: "S" });
       await processContactLoad(job, 2, organization);
       expect((await contactsInDb()).length).toBe(2);

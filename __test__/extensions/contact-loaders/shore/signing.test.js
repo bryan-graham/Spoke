@@ -15,7 +15,7 @@ const NOW = 1762000000;
 const signed = overrides => {
   const req = {
     method: "POST",
-    path: "/integrations/shore/1/opt-outs",
+    path: "/integrations/shore/v1/1/opt-outs",
     body: Buffer.from('{"cells":["+15555550123"]}'),
     ...overrides
   };
@@ -37,7 +37,7 @@ describe("shore signing", () => {
   it("accepts a GET with an empty body and a query string", () => {
     const req = signed({
       method: "GET",
-      path: "/integrations/shore/1/messages?afterId=10&limit=5",
+      path: "/integrations/shore/v1/1/messages?afterId=10&limit=5",
       body: ""
     });
     expect(verifySignature(req)).toEqual({ ok: true });
@@ -73,7 +73,7 @@ describe("shore signing", () => {
       verifySignature({ ...req, body: Buffer.from('{"cells":[]}') }).ok
     ).toBe(false);
     expect(
-      verifySignature({ ...req, path: "/integrations/shore/2/opt-outs" }).ok
+      verifySignature({ ...req, path: "/integrations/shore/v1/2/opt-outs" }).ok
     ).toBe(false);
     expect(verifySignature({ ...req, path: `${req.path}?limit=1` }).ok).toBe(
       false

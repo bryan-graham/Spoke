@@ -4,7 +4,7 @@ import { shoreAuth } from "./auth";
 import { optOutsHandler } from "./opt-outs";
 import { addReadRoutes } from "./read-api";
 
-export const BASE_PATH = "/integrations/shore/:organizationId";
+export const BASE_PATH = "/integrations/shore/v1/:organizationId";
 
 // Shore sends POST bodies with this content type. Spoke's global parsers
 // (bodyParser.json and urlencoded in src/server/index.js) don't match it, so

@@ -13,6 +13,7 @@ import {
 } from "../../../test_helpers";
 import { signedHeaders } from "../../../../src/extensions/contact-loaders/shore/lib/signing";
 import { settledPrefix } from "../../../../src/extensions/contact-loaders/shore/lib/read-api";
+import { expectResponseMatches } from "./contract";
 
 // The rest of Spoke's app is real; only the React page renderer (which needs
 // built client assets) and the polyfill (already loaded) are stubbed.
@@ -32,6 +33,23 @@ const shoreFeatures = extra => ({
   ...extra
 });
 
+// Maps a request path to its operation in docs/shore-contract.openapi.json,
+// e.g. /integrations/shore/v1/1/campaigns/7/contact-state?limit=1
+//   → /campaigns/{campaignId}/contact-state
+const contractPath = path =>
+  path
+    .split("?")[0]
+    .replace(/^\/integrations\/shore\/v1\/[^/]+/, "")
+    .replace(
+      /^\/campaigns\/[^/]+\/contact-state$/,
+      "/campaigns/{campaignId}/contact-state"
+    );
+
+// Every signed request in these tests also checks that the response, whatever
+// its status, matches the published contract.
+const matchesContract = (method, path) => res =>
+  expectResponseMatches(res, contractPath(path), method);
+
 describe("shore endpoints (through Spoke's app)", () => {
   let app;
   let c; // createStartedCampaign() result
@@ -41,7 +59,8 @@ describe("shore endpoints (through Spoke's app)", () => {
   const get = (path, { key = KEY } = {}) =>
     request(app)
       .get(path)
-      .set(signedHeaders({ key, method: "GET", path, body: "" }));
+      .set(signedHeaders({ key, method: "GET", path, body: "" }))
+      .expect(matchesContract("get", path));
 
   const post = (
     path,
@@ -54,10 +73,11 @@ describe("shore endpoints (through Spoke's app)", () => {
       .post(path)
       .set(signedHeaders({ key, method: "POST", path, body }))
       .set("Content-Type", contentType)
-      .send(body);
+      .send(body)
+      .expect(matchesContract("post", path));
   };
 
-  const optOutPath = () => `/integrations/shore/${orgId}/opt-outs`;
+  const optOutPath = () => `/integrations/shore/v1/${orgId}/opt-outs`;
 
   beforeAll(async () => {
     // Jest's setup file has already loaded Spoke's contact-loader list, which
@@ -75,7 +95,9 @@ describe("shore endpoints (through Spoke's app)", () => {
     // page renderer. (Tables aren't created until beforeEach, so this may be
     // a 500.)
     const mounted = async () => {
-      const res = await request(app).get("/integrations/shore/999999/messages");
+      const res = await request(app).get(
+        "/integrations/shore/v1/999999/messages"
+      );
       return Boolean(res.body && res.body.error);
     };
     let ok = false;
@@ -103,16 +125,16 @@ describe("shore endpoints (through Spoke's app)", () => {
 
   describe("authentication", () => {
     it("answers 404 for an unknown or unconfigured organization", async () => {
-      await get("/integrations/shore/99999/messages").expect(404);
-      await get("/integrations/shore/abc/messages").expect(404);
+      await get("/integrations/shore/v1/99999/messages").expect(404);
+      await get("/integrations/shore/v1/abc/messages").expect(404);
       await updateOrganizationFeatures(c.testOrganization, {
         SHORE_INTEGRATION_KEY: ""
       });
-      await get(`/integrations/shore/${orgId}/messages`).expect(404);
+      await get(`/integrations/shore/v1/${orgId}/messages`).expect(404);
     });
 
     it("answers 401 for a bad or missing signature", async () => {
-      const path = `/integrations/shore/${orgId}/messages`;
+      const path = `/integrations/shore/v1/${orgId}/messages`;
       await get(path, { key: "w".repeat(40) }).expect(401);
       await request(app)
         .get(path)
@@ -125,7 +147,7 @@ describe("shore endpoints (through Spoke's app)", () => {
     });
 
     it("ignores Spoke's session: no cookie is needed or used", async () => {
-      const res = await get(`/integrations/shore/${orgId}/messages`).expect(
+      const res = await get(`/integrations/shore/v1/${orgId}/messages`).expect(
         200
       );
       expect(res.body).toEqual({ messages: [], nextAfterId: 0 });
@@ -280,7 +302,7 @@ describe("shore endpoints (through Spoke's app)", () => {
         send_status: "DELIVERED"
       });
 
-      const base = `/integrations/shore/${orgId}/messages`;
+      const base = `/integrations/shore/v1/${orgId}/messages`;
       const first = await get(`${base}?limit=1`).expect(200);
       expect(first.body.messages).toHaveLength(1);
       expect(first.body.messages[0]).toMatchObject({
@@ -313,15 +335,17 @@ describe("shore endpoints (through Spoke's app)", () => {
         shoreFeatures({ SHORE_SETTLE_SECONDS: "15" })
       );
       await insertMessage(c.dbCampaignContact);
-      const res = await get(`/integrations/shore/${orgId}/messages`).expect(
+      const res = await get(`/integrations/shore/v1/${orgId}/messages`).expect(
         200
       );
       expect(res.body).toEqual({ messages: [], nextAfterId: 0 });
     });
 
     it("rejects bad paging", async () => {
-      await get(`/integrations/shore/${orgId}/messages?afterId=-1`).expect(400);
-      await get(`/integrations/shore/${orgId}/messages?limit=0`).expect(400);
+      await get(`/integrations/shore/v1/${orgId}/messages?afterId=-1`).expect(
+        400
+      );
+      await get(`/integrations/shore/v1/${orgId}/messages?limit=0`).expect(400);
     });
 
     it("returns survey answers, tags and opt-outs", async () => {
@@ -358,7 +382,7 @@ describe("shore endpoints (through Spoke's app)", () => {
       });
 
       const qr = await get(
-        `/integrations/shore/${orgId}/question-responses`
+        `/integrations/shore/v1/${orgId}/question-responses`
       ).expect(200);
       expect(qr.body.questionResponses).toEqual([
         expect.objectContaining({
@@ -368,7 +392,9 @@ describe("shore endpoints (through Spoke's app)", () => {
         })
       ]);
 
-      const tags = await get(`/integrations/shore/${orgId}/tags`).expect(200);
+      const tags = await get(`/integrations/shore/v1/${orgId}/tags`).expect(
+        200
+      );
       expect(tags.body.tags).toEqual([
         expect.objectContaining({
           campaignContactId: Number(contact.id),
@@ -377,15 +403,15 @@ describe("shore endpoints (through Spoke's app)", () => {
         })
       ]);
 
-      const optOuts = await get(`/integrations/shore/${orgId}/opt-outs`).expect(
-        200
-      );
+      const optOuts = await get(
+        `/integrations/shore/v1/${orgId}/opt-outs`
+      ).expect(200);
       expect(optOuts.body.optOuts).toEqual([
         expect.objectContaining({ cell: "+15555550123", reasonCode: "stop" })
       ]);
 
       const campaigns = await get(
-        `/integrations/shore/${orgId}/campaigns`
+        `/integrations/shore/v1/${orgId}/campaigns`
       ).expect(200);
       expect(campaigns.body.campaigns).toHaveLength(1);
       expect(campaigns.body.campaigns[0]).toMatchObject({
@@ -400,7 +426,7 @@ describe("shore endpoints (through Spoke's app)", () => {
         )
       ).toMatchObject({ question: "Can we count on your vote?" });
 
-      const statePath = `/integrations/shore/${orgId}/campaigns/${c.testCampaign.id}/contact-state?limit=1`;
+      const statePath = `/integrations/shore/v1/${orgId}/campaigns/${c.testCampaign.id}/contact-state?limit=1`;
       const state = await get(statePath).expect(200);
       expect(state.body.contacts).toEqual([
         {
@@ -426,7 +452,7 @@ describe("shore endpoints (through Spoke's app)", () => {
 
     it("404s contact state for a campaign in another organization", async () => {
       await get(
-        `/integrations/shore/${orgId}/campaigns/${otherContact.campaign_id}/contact-state`
+        `/integrations/shore/v1/${orgId}/campaigns/${otherContact.campaign_id}/contact-state`
       ).expect(404);
     });
   });

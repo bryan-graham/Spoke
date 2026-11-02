@@ -10,7 +10,8 @@ application. The extensions let Shore:
 3. **Send opt-outs.** Tell Spoke, safely and within seconds, that someone has asked not to
    be texted through another channel (email, a phone call, a form).
 
-Status: approved 2026-11-01. The Spoke extension is built (2026-11-02) in
+Status: approved 2026-11-01. **The exact interface is in
+[shore-contract.md](shore-contract.md), which wins where this document differs.** The Spoke extension is built (2026-11-02) in
 `src/extensions/contact-loaders/shore/`; setup is in `docs/HOWTO-integrate-with-shore.md`.
 Shore's side isn't built yet. This version replaces the
 first draft after checking it against Spoke's code; "Changes from the first draft" at the end
@@ -83,7 +84,7 @@ src/extensions/contact-loaders/shore/
   lib/config.js         reads and validates the config keys
   lib/signing.js        HMAC signing and verification
   lib/shore-client.js   HTTP client for Shore's endpoints
-  lib/routes.js         mounts /integrations/shore/:organizationId
+  lib/routes.js         mounts /integrations/shore/v1/:organizationId
   lib/auth.js           organization + signature check for every route
   lib/opt-outs.js       POST /opt-outs
   lib/read-api.js       the outbound read endpoints and their queries
@@ -146,8 +147,9 @@ checking the signature.
 - Contacts arrive from Shore over HTTPS and go straight into `campaign_contact`. Nothing is
   written to disk or a temp file.
 
-**Shore's side.** Shore stores only a hash of the key and scopes every request to the
-campaign it belongs to.
+**Shore's side.** Shore must keep the key itself, not a hash: the same key both signs
+Shore's requests and checks Spoke's, so Shore stores it encrypted (for example with a
+secret manager) and scopes every request to the campaign it belongs to.
 
 ## Part 1: loading lists
 
@@ -292,7 +294,7 @@ the contact is often not loaded. Polling avoids all of that:
 
 ### Endpoints (Shore → Spoke)
 
-All under `${SPOKE_BASE_URL}/integrations/shore/:organizationId`, signed GETs, JSON, scoped
+All under `${SPOKE_BASE_URL}/integrations/shore/v1/:organizationId`, signed GETs, JSON, scoped
 to that organization. Every list endpoint takes `afterId` (default 0) and `limit` (default
 500, at most 2000), returns rows in ascending `id`, and returns `nextAfterId` (the last
 `id` in the page, or the input when the page is empty).
@@ -425,7 +427,7 @@ add an ID window per request.
 
 ## Part 3: opt-outs into Spoke
 
-### `POST ${SPOKE_BASE_URL}/integrations/shore/:organizationId/opt-outs`
+### `POST ${SPOKE_BASE_URL}/integrations/shore/v1/:organizationId/opt-outs`
 
 Signed, `Content-Type: application/vnd.shore+json`. Shore calls it as soon as it records a
 text opt-out or suppression (a suppression covers every mobile number the person has),
@@ -523,7 +525,8 @@ read Spoke's database directly with a **read-only** role limited to `message`,
 
 Built in Shore, with its own tests:
 
-- **Settings:** a "Spoke extension" key, created and shown once, only its hash stored.
+- **Settings:** a "Spoke extension" key, created and shown once, stored encrypted (not
+  hashed; Shore needs it to sign requests).
 - **Endpoints:** the three list-loading endpoints in Part 1, signed, campaign-scoped,
   audited.
 - **Poller:** reads the Part 2 feeds every 30–60 seconds, stores cursors, re-reads a
@@ -534,6 +537,11 @@ Built in Shore, with its own tests:
 
 ## Changes from the first draft
 
+- **Versioned Spoke paths (2026-11-02):** Spoke's endpoints moved to
+  `/integrations/shore/v1/...`, matching Shore's `/api/spoke/v1/...`, before anything was
+  deployed.
+- **Shore keeps the key, encrypted, not a hash (2026-11-02):** HMAC needs the secret on both
+  sides.
 - **Everything in the contact loader; no service manager.** Spoke's `onOptOut` hook isn't
   given the cell number, and for STOP replies the contact is usually not loaded, so the
   service manager couldn't reliably report opt-outs without a core change. Opt-outs now

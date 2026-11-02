@@ -9,8 +9,9 @@ set up:
   forms) to Spoke. They take effect within a second.
 - Shore can **read** messages, survey answers, tags and opt-outs from Spoke.
 
-The design, including every endpoint's request and response, is in
-[spoke-plugins.md](spoke-plugins.md).
+Every endpoint's exact request and response is in [shore-contract.md](shore-contract.md).
+The design and its reasons are in [spoke-plugins.md](spoke-plugins.md), and advice for
+building Shore's side is in [shore-implementation-guide.md](shore-implementation-guide.md).
 
 ## Before you start
 
@@ -64,13 +65,13 @@ Shore then calls:
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /integrations/shore/<id>/opt-outs` | Send opt-outs to Spoke |
-| `GET /integrations/shore/<id>/messages` | Messages sent and received |
-| `GET /integrations/shore/<id>/question-responses` | Survey answers |
-| `GET /integrations/shore/<id>/tags` | Tags on contacts |
-| `GET /integrations/shore/<id>/opt-outs` | Opt-outs recorded in Spoke |
-| `GET /integrations/shore/<id>/campaigns` | Campaigns and their survey questions |
-| `GET /integrations/shore/<id>/campaigns/<campaignId>/contact-state` | Current answers and tags per contact |
+| `POST /integrations/shore/v1/<id>/opt-outs` | Send opt-outs to Spoke |
+| `GET /integrations/shore/v1/<id>/messages` | Messages sent and received |
+| `GET /integrations/shore/v1/<id>/question-responses` | Survey answers |
+| `GET /integrations/shore/v1/<id>/tags` | Tags on contacts |
+| `GET /integrations/shore/v1/<id>/opt-outs` | Opt-outs recorded in Spoke |
+| `GET /integrations/shore/v1/<id>/campaigns` | Campaigns and their survey questions |
+| `GET /integrations/shore/v1/<id>/campaigns/<campaignId>/contact-state` | Current answers and tags per contact |
 
 Every request must be signed with the key. Unsigned or wrongly signed requests get 401, and
 an organization without the configuration gets 404.
