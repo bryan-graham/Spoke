@@ -148,27 +148,11 @@ export const resolvers = {
           getConfig("ALLOW_SEND_ALL", organization, { truthy: 1 }) &&
           getFeatures(organization).ALLOW_SEND_ALL_ENABLED
       ),
-    theme: async organization => {
-      const themeOptions = {
-        palette: {
-          type: "light",
-          primary: {
-            main: "#209556"
-          },
-          secondary: {
-            main: "#555555"
-          },
-          warning: {
-            main: "#fabe28"
-          },
-          info: {
-            main: "#3f80b2"
-          }
-        }
-      };
-      // return themeOptions;
-      return getFeatures(organization).theme || themeOptions;
-    },
+    theme: async organization =>
+      // Only a palette the organization saved (Settings). Without one the
+      // app uses its default theme (Shore's, src/styles/mui-theme.js) for the
+      // current color scheme, instead of an old hard-coded palette.
+      getFeatures(organization).theme || null,
     settings: async (organization, _, { user, loaders }) => {
       try {
         await accessRequired(user, organization.id, "OWNER", true);

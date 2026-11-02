@@ -63,6 +63,11 @@ const config = {
         use: [{ loader: "style-loader" }, { loader: "css-loader" }]
       },
       {
+        // Self-hosted font files referenced from CSS (@fontsource-variable)
+        test: /\.(woff2?|ttf|eot)$/,
+        type: "asset/resource"
+      },
+      {
         test: /\.jsx?$/,
         use: jsxLoaders,
         exclude: /(node_modules|bower_components)/
@@ -71,9 +76,15 @@ const config = {
   },
   resolve: {
     fallback: {
-      stream: require.resolve( "stream-browserify" ),
-      zlib: require.resolve( "browserify-zlib" ),
-      vm: require.resolve( "vm-browserify" )
+      stream: require.resolve("stream-browserify"),
+      zlib: require.resolve("browserify-zlib"),
+      vm: require.resolve("vm-browserify")
+    },
+    alias: {
+      // Use Tabler's ES module build so only the icons we import are bundled
+      // (its CommonJS build is one file with every icon).
+      "@tabler/icons-react$":
+        "@tabler/icons-react/dist/esm/tabler-icons-react.mjs"
     },
     mainFields: ["browser", "main", "module"],
     extensions: [".js", ".jsx", ".json"]

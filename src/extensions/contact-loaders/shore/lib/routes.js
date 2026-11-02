@@ -3,6 +3,8 @@ import bodyParser from "body-parser";
 import { shoreAuth } from "./auth";
 import { optOutsHandler } from "./opt-outs";
 import { addReadRoutes } from "./read-api";
+import { MENU_PATH, menuHandler } from "./menu";
+import { ASSETS_PATH, assetsHandler } from "./branding";
 
 export const BASE_PATH = "/integrations/shore/v1/:organizationId";
 
@@ -38,5 +40,10 @@ export function buildRouter() {
 }
 
 export function mountRoutes(app) {
+  // Shore's shared sidebar menu, for signed-in Spoke users (session auth).
+  app.get(MENU_PATH, menuHandler());
+  // Shore's favicon and wordmark, from ../assets/ (public, like any favicon).
+  app.get(`${ASSETS_PATH}/:name`, assetsHandler());
+  // Server-to-server endpoints (signed by Shore).
   app.use(BASE_PATH, buildRouter());
 }

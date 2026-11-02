@@ -36,6 +36,7 @@ import { dataTest } from "../../lib/attributes";
 import ContactToolbar from "./ContactToolbar";
 import { getCookie, setCookie } from "../../lib/cookie";
 import { deepCopy } from "../utils";
+import { v, palette } from "../../styles/shore-tokens";
 
 export class AssignmentTexterContactControls extends React.Component {
   constructor(props) {
@@ -355,7 +356,10 @@ export class AssignmentTexterContactControls extends React.Component {
         this.props.campaign.organization.optOutMessage
       )
     ).data.getOptOutMessage;
-    this.setState({contactOptOutMessage: optOutMessage, optOutMessageText: optOutMessage});
+    this.setState({
+      contactOptOutMessage: optOutMessage,
+      optOutMessageText: optOutMessage
+    });
     const update = { optOutDialogOpen: true };
     if (this.refs.answerButtons) {
       // store this, because on-close, we lose this
@@ -672,14 +676,14 @@ export class AssignmentTexterContactControls extends React.Component {
                   margin: "9px",
                   color:
                     this.state.optOutMessageText ===
-                      this.state.contactOptOutMessage
+                    this.state.contactOptOutMessage
                       ? "white"
-                      : "#494949",
+                      : v("text"),
                   backgroundColor:
                     this.state.optOutMessageText ===
-                      this.state.contactOptOutMessage
+                    this.state.contactOptOutMessage
                       ? "#727272"
-                      : "white"
+                      : v("surface")
                 }}
                 onClick={() => {
                   this.setState({
@@ -694,9 +698,11 @@ export class AssignmentTexterContactControls extends React.Component {
                 style={{
                   margin: "0 9px 0 9px",
                   color:
-                    this.state.optOutMessageText === "" ? "white" : "#494949",
+                    this.state.optOutMessageText === "" ? "white" : v("text"),
                   backgroundColor:
-                    this.state.optOutMessageText === "" ? "#727272" : "white"
+                    this.state.optOutMessageText === ""
+                      ? "#727272"
+                      : v("surface")
                 }}
                 onClick={() => {
                   this.setState({ optOutMessageText: "" });
@@ -726,10 +732,10 @@ export class AssignmentTexterContactControls extends React.Component {
                 type="submit"
                 style={{
                   ...inlineStyles.inlineBlock,
-                  borderColor: "#790000",
+                  borderColor: palette.coral[7],
                   color: "white",
                   marginLeft: "9px",
-                  backgroundColor: "#BC0000"
+                  backgroundColor: palette.coral[6]
                 }}
                 variant="contained"
               >
@@ -929,8 +935,8 @@ export class AssignmentTexterContactControls extends React.Component {
             }}
             style={{
               marginRight: "9px",
-              backgroundColor: isCurrentAnswer(opt) ? "#727272" : "white",
-              color: isCurrentAnswer(opt) ? "white" : "#494949"
+              backgroundColor: isCurrentAnswer(opt) ? "#727272" : v("surface"),
+              color: isCurrentAnswer(opt) ? "white" : v("text")
             }}
             variant="outlined"
           >
@@ -945,10 +951,10 @@ export class AssignmentTexterContactControls extends React.Component {
             }}
             style={{
               marginRight: "9px",
-              color: isCurrentCannedResponse(script) ? "white" : "#494949",
+              color: isCurrentCannedResponse(script) ? "white" : v("text"),
               backgroundColor: isCurrentCannedResponse(script)
                 ? "#727272"
-                : "white"
+                : v("surface")
             }}
             title={script.title}
             variant="outlined"
@@ -1149,7 +1155,7 @@ export class AssignmentTexterContactControls extends React.Component {
             backgroundColor:
               this.props.muiTheme.palette.type === "light"
                 ? "#f0f0f0"
-                : this.props.muiTheme.palette.grey[700]
+                : palette.dark[8]
           }}
         >
           {internalComponent}
@@ -1176,7 +1182,10 @@ export class AssignmentTexterContactControls extends React.Component {
     if (window.DOWNTIME_NO_INITIAL) {
       return [
         this.renderToolbar(enabledSideboxes),
-        <div>Sending initial messages is currently paused. You can still reply to any incoming messages.</div>
+        <div>
+          Sending initial messages is currently paused. You can still reply to
+          any incoming messages.
+        </div>
       ];
     }
     return [
@@ -1253,7 +1262,7 @@ export class AssignmentTexterContactControls extends React.Component {
           backgroundColor:
             this.props.muiTheme.palette.type === "light"
               ? "#d6d7df"
-              : this.props.muiTheme.palette.grey[800]
+              : palette.dark[9]
         }}
       >
         {content}

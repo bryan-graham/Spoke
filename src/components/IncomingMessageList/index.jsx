@@ -17,6 +17,7 @@ import ConversationPreviewModal from "./ConversationPreviewModal";
 import TagChip from "../TagChip";
 import { MESSAGE_STATUSES } from "../../components/IncomingMessageFilter";
 import withMuiTheme from "../../containers/hoc/withMuiTheme";
+import { v } from "../../styles/shore-tokens";
 
 export const prepareDataTableData = conversations =>
   conversations.map(conversation => ({
@@ -204,7 +205,7 @@ export class IncomingMessageList extends Component {
               >
                 <span
                   style={{
-                    color: lastMessage.isFromContact ? "blue" : "black"
+                    color: lastMessage.isFromContact ? v("link") : v("text")
                   }}
                 >
                   <b>{lastMessage.isFromContact ? "Contact:" : "Texter:"} </b>

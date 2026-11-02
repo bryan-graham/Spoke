@@ -30,6 +30,7 @@ import theme from "../../../styles/theme";
 import withMuiTheme from "../../../containers/hoc/withMuiTheme";
 
 import CampaignMessagingServiceForm from "./react-component-campaignmessageservice";
+import { v } from "../../../styles/shore-tokens";
 // TODO: replace with CampaignMessagingServiceForm when enabled on backend
 
 // import { dataTest } from "../lib/attributes";
@@ -308,7 +309,7 @@ export class CampaignConfigBase extends React.Component {
                         key={areaCode}
                         style={{
                           marginBottom: 15,
-                          border: "1px solid rgb(225, 228, 224)",
+                          border: `1px solid ${v("border")}`,
                           borderRadius: 8
                         }}
                         disabled
@@ -846,7 +847,7 @@ export class CampaignConfigBase extends React.Component {
                             key={areaCode}
                             style={{
                               marginBottom: 15,
-                              border: "1px solid rgb(225, 228, 224)",
+                              border: `1px solid ${v("border")}`,
                               borderRadius: 8
                             }}
                           >

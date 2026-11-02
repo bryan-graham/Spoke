@@ -1,33 +1,24 @@
 import PropTypes from "prop-types";
 import React from "react";
-import { StyleSheet, css } from "aphrodite";
-import theme from "../styles/theme";
 import { withRouter } from "react-router";
+import ShoreShell from "./ShoreShell/ShoreShell";
 
-const styles = StyleSheet.create({
-  container: {
-    ...theme.layouts.multiColumn.container
-  },
-  content: {
-    ...theme.layouts.multiColumn.flexColumn,
-    paddingLeft: "2rem",
-    paddingRight: "2rem",
-    margin: "24px auto"
-  }
-});
-
+// Texter pages inside the Shore shell. The texting screens themselves
+// (fullScreen) stay full screen, without the sidebar, so texters can focus.
 class TexterDashboard extends React.Component {
   render() {
-    const { main, topNav, fullScreen } = this.props;
+    const { main, topNav, fullScreen, params, location } = this.props;
+    if (fullScreen) {
+      return fullScreen;
+    }
     return (
-      fullScreen || (
-        <div>
-          {topNav}
-          <div className={css(styles.container)}>
-            <div className={css(styles.content)}>{main}</div>
-          </div>
-        </div>
-      )
+      <ShoreShell
+        organizationId={params && params.organizationId}
+        currentPath={location && location.pathname}
+        header={topNav}
+      >
+        {main}
+      </ShoreShell>
     );
   }
 }

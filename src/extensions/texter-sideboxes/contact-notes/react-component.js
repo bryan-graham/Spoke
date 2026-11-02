@@ -8,6 +8,7 @@ import TextField from "@material-ui/core/TextField";
 import CircularProgress from "@material-ui/core/CircularProgress";
 
 import loadData from "../../../containers/hoc/load-data";
+import { v } from "../../../styles/shore-tokens";
 
 export const displayName = () => "Contact notes";
 
@@ -84,7 +85,7 @@ export class TexterSideboxClass extends React.Component {
       <div style={{ marginTop: 15 }}>
         <TextField
           id="contact-notes"
-          style={{ backgroundColor: "#dfdfdf" }}
+          style={{ backgroundColor: v("subtle") }}
           label="Contact Notes"
           multiline
           rows={6}
@@ -109,7 +110,9 @@ export class TexterSideboxClass extends React.Component {
               }}
             >
               <CircularProgress size={15} disableShrink />
-              <em style={{ marginLeft: 6, color: "#555" }}>Saving notes...</em>
+              <em style={{ marginLeft: 6, color: v("dimmed") }}>
+                Saving notes...
+              </em>
             </div>
           )
         )}

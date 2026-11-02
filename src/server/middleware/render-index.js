@@ -1,4 +1,5 @@
 import { hasConfig, getConfig } from "../api/lib/config";
+import { shoreBranding } from "../../extensions/contact-loaders/shore/lib/branding";
 import { getProcessEnvTz, getProcessEnvDstReferenceTimezone } from "../../lib";
 import { base64ToString } from "../api/lib/utils";
 
@@ -9,19 +10,18 @@ const googleClientEmail = () => {
   if (canGoogleImport) {
     try {
       const s_GOOGLE_SECRET = base64ToString(process.env.BASE64_GOOGLE_SECRET);
-      output = (JSON.parse((
-        s_GOOGLE_SECRET
-        .replace(/(\r\n|\n|\r)/gm, ""))) // new lines gum up parsing
-        .client_email)
-	      .replaceAll(" ", "");
+      output = JSON.parse(s_GOOGLE_SECRET.replace(/(\r\n|\n|\r)/gm, "")) // new lines gum up parsing
+        .client_email.replaceAll(" ", "");
     } catch (err) {
-      console.error(`
+      console.error(
+        `
         Google API failed to load client email.
         Please check your BASE64_GOOGLE_SECRET environment variable is intact: `,
-        err);
-    } 
+        err
+      );
+    }
   }
-  return (output || "");
+  return output || "";
 };
 
 const rollbarScript = process.env.ROLLBAR_CLIENT_TOKEN
@@ -47,13 +47,27 @@ const rollbarScript = process.env.ROLLBAR_CLIENT_TOKEN
   </script>`
   : "";
 
-// the site is not very useful without auth0, unless you have a session cookie already
-// good for doing dev offline
-const externalLinks = process.env.NO_EXTERNAL_LINKS
-  ? ""
-  : '<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Poppins">';
+// Fonts (Inter and DM Sans) are self-hosted in the client bundle
+// (src/client/index.jsx), so no external stylesheet is needed.
+const externalLinks = "";
+
+const SPOKE_FAVICON =
+  '<link rel="icon" href="https://s3-us-west-1.amazonaws.com/spoke-public/spoke_logo.svg">';
+
+// Shore's favicon when this Spoke is set up for Shore and the file is there
+// (src/extensions/contact-loaders/shore/assets/); Spoke's otherwise.
+function faviconLinks(branding) {
+  if (!branding || !branding.favicon) {
+    return SPOKE_FAVICON;
+  }
+  const touch = branding.appleTouchIcon
+    ? `\n    <link rel="apple-touch-icon" href="${branding.appleTouchIcon}">`
+    : "";
+  return `<link rel="icon" type="${branding.faviconType}" href="${branding.favicon}">${touch}`;
+}
 
 export default function renderIndex(html, css, assetMap) {
+  const branding = shoreBranding();
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -62,10 +76,23 @@ export default function renderIndex(html, css, assetMap) {
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
     <title>Spoke</title>
     ${externalLinks}
+    <script>
+      // Start in the right colour scheme before the app loads (keys from
+      // src/components/ColorScheme.js), so dark mode doesn't flash white.
+      try {
+        var pref = localStorage.getItem("spoke.shoreColorScheme") ||
+          localStorage.getItem("spoke.colorScheme") || "auto";
+        var dark = pref === "dark" || (pref !== "light" && window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-color-scheme", dark ? "dark" : "light");
+      } catch (e) {}
+    </script>
     <style>
       /* CSS declarations go here */
       body {
-        font-family: 'Poppins';
+        font-family: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+        background-color: #F3F4F8;
+        color: #181818;
         position: absolute;
         top: 0;
         bottom: 0;
@@ -78,11 +105,16 @@ export default function renderIndex(html, css, assetMap) {
         font-size: 14px;
       }
 
+      html[data-color-scheme="dark"] body {
+        background-color: #0A1122;
+        color: #E2E8F0;
+      }
+
       /**/
     </style>
     <style data-aphrodite>${css.content}</style>
     ${rollbarScript}
-    <link rel="icon" href="https://s3-us-west-1.amazonaws.com/spoke-public/spoke_logo.svg">
+    ${faviconLinks(branding)}
   </head>
   <body>
     <div id="mount">${html}</div>
@@ -94,6 +126,7 @@ export default function renderIndex(html, css, assetMap) {
         truthy: true
       })}
       window.NODE_ENV="${process.env.NODE_ENV}"
+      window.SHORE_LOGO_URL=${JSON.stringify((branding && branding.logo) || "")}
       window.PRIVACY_URL="${process.env.PRIVACY_URL || ""}"
       window.BASE_URL="${process.env.BASE_URL || ""}"
       window.NOT_IN_USA=${process.env.NOT_IN_USA || 0}
