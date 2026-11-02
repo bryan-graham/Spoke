@@ -21,8 +21,9 @@ lists what moved and why.
 
 - **No changes to Spoke's core files.** Everything lives in new extension folders that
   Spoke loads by name from its configuration settings. If a feature can't be built that way,
-  we change the design, not core. This keeps upstream rebases trivial and keeps the work
-  offerable upstream.
+  we change the design, not core. This keeps the extension separate from Spoke's own
+  code, so fixes from the original Spoke project can still be taken in later with few
+  conflicts, if they're ever wanted.
 - **APIs before shared databases.** Shore talks to Spoke through signed HTTP endpoints that
   the extension owns. Direct, read-only database access stays a fallback (see "Fallback:
   reading Spoke's database"), not the plan.
@@ -74,8 +75,10 @@ manager, message handler or action handler is needed.
 
 ## Where the code lives
 
-This fork of [ProgressiveCoders/Spoke](https://github.com/ProgressiveCoders/Spoke) (GPLv3),
-tracking upstream `main` for rebases. New files only:
+[bryan-graham/Spoke](https://github.com/bryan-graham/Spoke), a standalone fork of
+[ProgressiveCoders/Spoke](https://github.com/ProgressiveCoders/Spoke). It stays GPLv3.
+Changes stay in this fork; they aren't sent back to the projects it came from. New files
+only:
 
 ```
 src/extensions/contact-loaders/shore/
@@ -491,7 +494,7 @@ read Spoke's database directly with a **read-only** role limited to `message`,
 - Reads only. Shore never writes to Spoke's tables; every write goes through an endpoint so
   Spoke's cache stays correct.
 - Treat it as a schema dependency: anything Shore reads this way must be rechecked on every
-  upstream Spoke upgrade.
+  Spoke upgrade.
 - Prefer adding an endpoint over widening this.
 
 ## Failure behavior

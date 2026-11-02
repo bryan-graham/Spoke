@@ -17,27 +17,21 @@ wsl --install
 4. Allow your computer to reboot, and Ubuntu will finish installation. Ubuntu will be an application on you PC.
   - Ubuntu will ask you to make a username and password. This is purely local and will only be on your machine.
 ---
-### [Repository](https://github.com/StateVoicesNational/Spoke)
-1. Fork this repo then, **in Ubuntu**, clone your forked copy. Future pull requests can be made from your repo to Spoke. 
+### [Repository](https://github.com/bryan-graham/Spoke)
+1. Clone the repository **in Ubuntu**:
 ```
-git clone <url of your forked repo>
-```
-
-2. Change your pwd (present working directory) to the spoke directory before installations 
-```
-cd spoke
+git clone https://github.com/bryan-graham/Spoke.git
 ```
 
-3. You may use this opportunity to set the remote upstream to spoke's repo for future fetches.
+2. Change your pwd (present working directory) to the Spoke directory before installations
 ```
-git remote add upstream https://github.com/StateVoicesNational/Spoke.git
-``` 
-   -  you can check that this is configured correctly to push to the origin and fetch from spoke's repo. 
-   ```
-   git remote -v
-   ```
-   Your origin and Upstream should appear configured correctly.
-   - this is a good time to take a look at [Syncing a Fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork) for full understanding.
+cd Spoke
+```
+
+3. Make changes on a branch and open pull requests against `main` in
+   [bryan-graham/Spoke](https://github.com/bryan-graham/Spoke). This repository is
+   maintained on its own: changes aren't sent back to the projects it was forked from
+   (ProgressiveCoders/Spoke and StateVoicesNational/Spoke).
 
 ---
 
