@@ -1,10 +1,10 @@
 ## Getting Started
 
 ---
-### Download Windows Subsytem for Linex
-Windows Subsystem for Linex (WSL) allows users to run Linux enviroments and applications within Windows. 
+### Download Windows Subsystem for Linux
+Windows Subsystem for Linux (WSL) allows users to run Linux enviroments and applications within Windows. 
 Further information can be found [here](https://learn.microsoft.com/en-us/windows/wsl/about).
-1. Download WLS in the CMD as Administrator
+1. Install WSL from the command prompt (CMD), run as Administrator
 - WSL comes in two flavors, WSL1 and WSL2. This will install WSL2, and is needed to run the application correctly. Look into this [document](https://learn.microsoft.com/en-us/windows/wsl/install) from Microsoft if you need to upgrade from WSL1.
 ```
 wsl --install
@@ -17,7 +17,7 @@ wsl --install
 4. Allow your computer to reboot, and Ubuntu will finish installation. Ubuntu will be an application on you PC.
   - Ubuntu will ask you to make a username and password. This is purely local and will only be on your machine.
 ---
-### [Repository](https://github.com/MoveOnOrg/Spoke)
+### [Repository](https://github.com/StateVoicesNational/Spoke)
 1. Fork this repo then, **in Ubuntu**, clone your forked copy. Future pull requests can be made from your repo to Spoke. 
 ```
 git clone <url of your forked repo>
@@ -30,7 +30,7 @@ cd spoke
 
 3. You may use this opportunity to set the remote upstream to spoke's repo for future fetches.
 ```
-git remote add upstream https://github.com/MoveOnOrg/Spoke.git
+git remote add upstream https://github.com/StateVoicesNational/Spoke.git
 ``` 
    -  you can check that this is configured correctly to push to the origin and fetch from spoke's repo. 
    ```
@@ -60,7 +60,7 @@ To open an Ubuntu terminal in VS, click the three lines on the top left, then 'T
 
 ### Downloading
 
-1. Install the Node version listed in `.nvmrc`. This can also be found here:[.nvmrc](https://github.com/MoveOnOrg/Spoke/blob/main/.nvmrc). 
+1. Install the Node version listed in `.nvmrc` at the top of the repository (20.11.1 at the time of writing). 
 From the spoke directory **in Ubuntu**:
    ```
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
@@ -68,10 +68,10 @@ From the spoke directory **in Ubuntu**:
    nvm use
    ```
    * or visit [NVM](https://github.com/nvm-sh/nvm/blob/master/README.md), a great resource for installation if your terminal isn't recognizing nvm or if you'd like more background on these commands.
-   - at this time of this writing, nvm install will install a version above 17 but we want to run 12.  Yarn will have to be installed again, even if you have yarn installed already, as it will need to be compatible with this version of nvm. 
-2. Check to ensure that the proper version of nvm (16.18.0), is installed.
+   - `nvm install` and `nvm use` read the version from `.nvmrc`. Install yarn again after switching Node versions, even if you already have it.
+2. Check that Node matches the version in `.nvmrc`.
    ```
-   nvm -v
+   node -v
    ```
 3. Install yarn.
 
@@ -102,6 +102,8 @@ From the spoke directory **in Ubuntu**:
 ---
 ### Your `.env` file
 
+Because this guide uses PostgreSQL, set `DB_TYPE=pg` in your `.env`. (The other `DB_` values in `.env.example` already match the database set up below.)
+
 We use environment variables to allow instance admins to customize their Spoke experience. If you end up doing dev work on an area that is configured through environment variables, it will be helpful to be familiar with the patterns used. Because of this, we recommend that you take a look at the [environment variable reference](REFERENCE-environment_variables.md) to get a lay of the land.  
 
 ---
@@ -130,7 +132,7 @@ At this time, postgresql is preferred over Docker when running the Spoke applica
    ```
 3. Create your user
    ```
-   CREATE USER spoke WITH PASSWORD ‘spoke’;
+   CREATE USER spoke WITH PASSWORD 'spoke';
    ```
 4. Grant all privelages to your user.
    ```
@@ -154,8 +156,7 @@ At this point, you should be ready to start your app in development mode.
 3. As long as you leave `SUPPRESS_SELF_INVITE=` blank in your `.env` you should be able to invite yourself from the homepage by signing up with your information. (Notice the URL address in your window has an invite page parameter for the next route)
    - If you DO set that variable, then spoke will be invite-only and you'll need to generate an invite. Run:
      ```
-     echo "INSERT INTO invite (hash,is_valid) VALUES ('E4502B28-301E-4E63-9A97-ACA14E8160C8', 1);" |sqlite3 mydb.sqlite
-     # Note: When doing this with PostgreSQL, you would replace the `1` with `true`
+     sudo -u postgres psql spokedev -c "INSERT INTO invite (hash,is_valid) VALUES ('E4502B28-301E-4E63-9A97-ACA14E8160C8', true);"
      ```
    - Then use the generated key to visit an invite link, e.g.: http://localhost:3000/invite/E4502B28-301E-4E63-9A97-ACA14E8160C8. This should redirect you to the login screen. Use the "Sign Up" option to create your account.
 4. You should then be prompted to create an organization. Create it.
@@ -167,7 +168,7 @@ At this point, you should be ready to start your app in development mode.
 ---
 ### Further Development
 
-Check the end of [HOWTO_DEVELOPMENT_LOCAL_SETUP.md](https://github.com/engelhartrueben/Spoke/blob/main/docs/HOWTO_DEVELOPMENT_LOCAL_SETUP.md) for SMS and Twilio Development.
+Check the end of [HOWTO_DEVELOPMENT_LOCAL_SETUP.md](HOWTO_DEVELOPMENT_LOCAL_SETUP.md) for SMS and Twilio development.
 
 ---
 ### Basic Troubleshooting
@@ -178,9 +179,9 @@ Check the end of [HOWTO_DEVELOPMENT_LOCAL_SETUP.md](https://github.com/engelhart
     ```
     node -v
     ```
-    The console should return `16.18.0`, else run:
+    It should match `.nvmrc`; if it doesn't, run (from the Spoke directory):
     ```
-    nvm install 16.18.0
-    nvm use 16.18.0
+    nvm install
+    nvm use
     ```
     Check again to make sure you are using the right node version. 

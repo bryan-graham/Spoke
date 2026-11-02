@@ -46,6 +46,7 @@
   - [Environment variable reference](REFERENCE-environment_variables.md)
   - [Development guidelines](EXPLANATION-development-guidelines.md)
   - [How to deploy for local development](HOWTO_DEVELOPMENT_LOCAL_SETUP.md)
+  - [Local development on Windows 10 (WSL)](HOWTO_DEVELOPMENT_LOCAL_SETUP_WINDOWS10.md)
   - [Github labels and how we use them](EXPLANATION-labels.md)
   - [Lifecycle of a request](EXPLANATION-request-example.md)
   - [Manual graphql testing with rethinkdb](HOWTO_GRAPHQL_DEBUG.md)
