@@ -6,7 +6,7 @@ Spoke is an open source text-distribution tool for organizations to mobilize sup
 
 Spoke was created by Saikat Chakrabarti and Sheena Pakanati.
 
-On November 19th, 2023, the repo Spoke was transferred from MoveOn to [State Voices](https://github.com/StateVoicesNational/Dispatch) and kind of renamed to "Dispatch". There haven't been any updates to the repo since about October 2024.
+On November 19th, 2023, the repo Spoke was transferred from MoveOn to [State Voices](https://github.com/StateVoicesNational/Dispatch) and kind of renamed to "Dispatch". There haven't been any updates to the StateVoices repo since about October 2024.
 
 This fork's current version is **15.0.0** (based on Spoke 14.1.2): see the [Release Notes](docs/RELEASE_NOTES.md).
 
@@ -17,47 +17,27 @@ Changes are made here and aren't sent back to the projects it came from.
 
 ### A new look
 
-Spoke's interface has been redesigned to match [Shore](https://shore.vote), so the two feel
-like one product:
+Spoke's interface has been updated and redesigned to use a React front end with Matine components. These changes include:
 
 - **Layout:** a sidebar for navigation, with each page on a raised panel beside it. On phones
   the sidebar slides in from a menu button. The texting screens stay full screen so texters
   can focus.
-- **Style:** Shore's colours, the Inter and DM Sans fonts, rounded cards and tables, and
-  Tabler icons.
+- **Style:** Updated colors and fonts, rounded cards and tables, and Tabler icons.
 - **Dark mode:** each person can choose light, dark, or match their device from the account
-  menu at the bottom of the sidebar. When Spoke is connected to Shore, it follows the
-  person's Shore setting instead.
+  menu at the bottom of the sidebar.
 - **Navigation:** texters see their assignments; admins also see Campaigns, People, Message
   Review and Spoke's other admin pages, depending on their role.
 
-None of this needs setting up. Organizations that chose custom colours in Settings keep them
+None of this needs setting up. Organizations that chose custom colors in Settings keep them
 for buttons and highlights.
 
 ### Shore integration
 
-Spoke can work with Shore, a campaign organizing app, or entirely on its own. When connected:
+This Spoke fork can work with Shore, a new campaign organizing app, or entirely on its own. When connected data sharing
+enabled segments to be loaded as contact lists, automatic data sharing loads conversations and opt-outs, and the
+applications are integrated with a single menu and sign on. Without Shore, Spoke works as before.
 
-- **Contact lists:** campaign admins can load a Shore segment as a campaign's contacts. Shore
-  sends only people it's allowed to text.
-- **Opt-outs:** opt-outs Shore receives by email, phone or forms reach Spoke within seconds,
-  and opt-outs recorded in Spoke reach Shore.
-- **Conversations:** Shore can read messages, survey answers and tags from Spoke, so they
-  appear on each person's record in Shore.
-- **One menu:** Spoke's sidebar shows Shore's menu, with Spoke's pages under Texting, so
-  people can move between the two apps.
-- **Sign-in:** people can sign in to Spoke through Shore.
-
-Without Shore, Spoke works as before, with its own pages in the sidebar.
-
-To connect, see [How to integrate with Shore](docs/HOWTO-integrate-with-shore.md). More
-detail:
-
-- [Spoke's Shore interface](docs/shore-ui.md): what changed in the interface and how to set
-  up Shore's menu, colour scheme and logos.
-- [Shore integration contract](docs/shore-contract.md): the exact interface between the two
-  apps, for developers.
-- [Building Shore's side](docs/shore-implementation-guide.md): for the team working on Shore.
+To connect, see [How to integrate with Shore](docs/HOWTO-integrate-with-shore.md). 
 
 ## Setting up Spoke
 
@@ -74,7 +54,7 @@ rest of Spoke, but not this fork's changes.
 This button deploys **this fork** ([bryan-graham/Spoke](https://github.com/bryan-graham/Spoke),
 version 15.0.0, with the new interface and Shore support), not the original Spoke project.
 It's suitable for testing and, potentially, for small campaigns. It uses Heroku's smallest
-paid plans (a few dollars a month) and won't support production (large-scale) use.
+paid plans (~$15/mo) and generally won't support production use without component size increases.
 
 <a href="https://heroku.com/deploy?template=https://github.com/bryan-graham/Spoke/tree/v15.0.0">
   <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy this fork to Heroku">
@@ -85,7 +65,7 @@ Shore, see [How to integrate with Shore](docs/HOWTO-integrate-with-shore.md).
 
 **NOTE:** For production use, upgrade the app's dyno and Postgres plans in Heroku's dashboard
 (Resources) before you start any live campaigns: changing the database plan later means
-migrating data from earlier campaigns. Expect roughly $75 a month for most organizations.
+migrating data from earlier campaigns. 
 
 ### Other Options for Production Use
 
