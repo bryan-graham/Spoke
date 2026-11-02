@@ -12,7 +12,7 @@
     },
 
     "PASSPORT_STRATEGY": {
-      "description": "Either 'auth0' or 'local' -- We recommend auth0 for production systems",
+      "description": "Either 'auth0', 'token', or 'local' -- token for Shore integration",
       "required": true,
       "value": "local"
     },
@@ -29,6 +29,21 @@
 
     "AUTH0_CLIENT_SECRET": {
       "description": "auth0 client secret attached to auth0 account (if not using auth0, enter anything)",
+      "required": true
+    },
+
+    "TOKEN_AUTH_URL": {
+      "description": "URL to the token auth endpoint (if not using token, enter anything)",
+      "required": false
+    },
+
+    "TOKEN_AUTH_ISSUER": {
+      "description": "Root URL to domain of token issuer e.g. https://app.shore.vote (if not using token, enter anything)",
+      "required": false
+    },
+
+    "TOKEN_AUTH_SHARED_SECRET": {
+      "description": "token auth shared secret from the other application (if not using token, enter anything)",
       "required": true
     },
 
