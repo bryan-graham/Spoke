@@ -35,6 +35,9 @@
   - [How to Integrate with Action Kit](HOWTO_INTEGRATE_WITH_ACTIONKIT.md)
   - [How to Integrate with Upland Mobile Commons for Broadcast SMS Signup](HOWTO_INTEGRATE_WITH_MOBILE_COMMONS.md)
   - [How to Integrate with Revere for Broadcast SMS Signup](HOWTO_INTEGRATE_WITH_REVERE.md)
+  - [How to integrate with Shore](HOWTO-integrate-with-shore.md)
+  - [Shore integration contract](shore-contract.md)
+  - [Building Shore's side](shore-implementation-guide.md)
   - [Running Jobs in Production](PROD_RUNNING_JOBS.md)
   - [How to run a minimal deployment(not recommended)](HOWTO_MINIMALIST_DEPLOY.md)
 

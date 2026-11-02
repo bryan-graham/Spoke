@@ -1,94 +1,117 @@
 # Shore extensions for Spoke: requirements and design
 
-The design for a separate, open-source project: Spoke extensions that let a campaign load
-Shore segments into Spoke campaigns and keep opt-outs in step between the two systems, in
-both directions. This file lives in the Shore repo because it also defines the contract
-Shore implements. The extensions themselves are built in the fork, never in Shore
-(data-rules 10).
+The design for Spoke extensions that connect Spoke to Shore, an external campaign
+application. The extensions let Shore:
 
-Status: draft for the founder's review, 2026-11-01. Nothing here is built yet.
+1. **Load lists.** Pick a Shore segment in the campaign editor and load its textable
+   contacts into a Spoke campaign.
+2. **Receive interactions.** Read what happened in Spoke: messages sent and received,
+   survey (canvass) answers, tags, and opt-outs.
+3. **Send opt-outs.** Tell Spoke, safely and within seconds, that someone has asked not to
+   be texted through another channel (email, a phone call, a form).
+
+Status: approved 2026-11-01. **The exact interface is in
+[shore-contract.md](shore-contract.md), which wins where this document differs.** The Spoke extension is built (2026-11-02) in
+`src/extensions/contact-loaders/shore/`; setup is in `docs/HOWTO-integrate-with-shore.md`.
+Shore's side isn't built yet. This version replaces the
+first draft after checking it against Spoke's code; "Changes from the first draft" at the end
+lists what moved and why.
+
+## Principles
+
+- **No changes to Spoke's core files.** Everything lives in new extension folders that
+  Spoke loads by name from its configuration settings. If a feature can't be built that way,
+  we change the design, not core. This keeps upstream rebases trivial and keeps the work
+  offerable upstream.
+- **APIs before shared databases.** Shore talks to Spoke through signed HTTP endpoints that
+  the extension owns. Direct, read-only database access stays a fallback (see "Fallback:
+  reading Spoke's database"), not the plan.
+- **Spoke's own code paths for writes.** Opt-outs go through `cacheableData.optOut.save`,
+  the path a STOP reply takes, so Redis, the `opt_out` table and contacts all stay in step.
+- **Nothing slow in the texting path.** No hook that runs inside a texter's request or an
+  incoming message makes a network call to Shore. Shore pulls instead.
 
 ## Why
 
-- **Loading contacts.** Spoke's contacts come from a contact loader picked in the campaign
-  editor. Today that means a CSV that someone downloads from Shore and uploads to Spoke, and
-  staff aren't allowed bulk exports (tech.md). A Shore loader lists the campaign's segments
-  in Spoke and pulls in only the people Shore allows to be texted, checked when the list is
-  loaded (data-rules 4: "filter at push time").
-- **Opt-outs from Shore into Spoke.** Shore records text opt-outs and suppressions that
-  Spoke never sees: manual "stop texting me" requests, STOP replies on other channels. The
-  rules say they must reach Spoke within 5 minutes. Spoke's API can only opt out a contact
-  that's already in a Spoke campaign, and writing to Spoke's tables directly bypasses its
-  Redis cache (it can serve a stale opt-out list for up to 12 hours). The extension records
-  the opt-out through Spoke's own code, the same path a STOP reply takes.
-- **Opt-outs from Spoke into Shore.** STOP replies reach Shore within minutes through Shore's
-  read of Spoke's database. The extension tells Shore at once, so Shore doesn't email or
-  load someone who has just opted out.
-
-With these, Spoke can run with Redis. Without Redis, Spoke turns off its initial-text guard,
-which keeps a contact from getting the first message twice, and runs slower.
+- **Loading contacts.** Today someone downloads a CSV from Shore and uploads it to Spoke.
+  A loader pulls in only the people Shore allows to be texted, checked when the list is
+  loaded.
+- **Interactions into Shore.** Shore needs messages and canvass results on each person's
+  timeline. An API means Shore doesn't need a login to Spoke's database or knowledge of its
+  schema.
+- **Opt-outs into Spoke.** Spoke's GraphQL API can only opt out a contact that's already in a
+  campaign, and writing to Spoke's tables directly bypasses its Redis cache (which can serve
+  a stale opt-out list for up to 12 hours). The extension records the opt-out through Spoke's
+  own code.
 
 ## Scope
 
-**In scope (v1):**
+**In scope (v1):** one extension, the contact loader `shore`, which provides:
 
-1. A contact loader, `shore`: pick a Shore segment in the campaign editor, then load its
-   textable contacts with Shore's person ID as `external_id`.
-2. A server endpoint in Spoke, `POST /integrations/shore/:organizationId/opt-outs`: Shore
-   calls it to opt a number out in Spoke.
-3. A service manager, `shore`: on every opt-out recorded in Spoke, tell Shore.
+1. The segment picker and contact load.
+2. An **inbound** endpoint: Shore posts opt-outs to Spoke.
+3. **Outbound** read endpoints: Shore polls for messages, survey answers, tags, opt-outs and
+   campaign definitions.
+
+Contact loaders are the one extension type whose `addServerEndpoints(app)` Spoke calls at
+startup (`src/server/index.js`), so the loader is where all the endpoints live. No service
+manager, message handler or action handler is needed.
 
 **Not in scope:**
 
-- **Messages, survey answers, and tags into Shore.** Shore reads these from Spoke's
-  database on a schedule, with a read-only login (agreed separately). The extensions neither
-  provide nor depend on that read.
-- **Reversing opt-outs.** Shore never removes an opt-out in Spoke. Under data-rules 4 only
-  the person can reverse an opt-out, and Spoke has no clean path for a START from another
-  system. Revisit when Shore handles START (legal L11).
-- **Signing in.** Spoke already supports token sign-in through Shore (`PASSPORT_STRATEGY=token`),
-  and it needs no extension.
-- **Action handlers and message handlers.** Not needed while Shore reads Spoke's database.
-  They'd be the route if real-time activity were ever needed.
-- **One Spoke for several Shore campaigns.** v1 assumes one Spoke organization per Shore
-  campaign. The design keeps the Spoke organization ID in every URL and config key, so this
-  can be added later.
+- **Reversing opt-outs.** Shore never removes an opt-out in Spoke. Spoke itself has no
+  built-in way to reverse one (it doesn't act on START replies), so this needs a separate
+  decision if it's ever wanted.
+- **Signing in.** Spoke already supports token sign-in (`PASSPORT_STRATEGY=token`).
+- **Push from Spoke to Shore.** Shore polls; see "Why polling" below. A push hook can be
+  added later without changing the read API.
+- **Message delivery receipts in real time.** The messages endpoint reports each message's
+  `send_status` when it's read; Shore re-reads a trailing window to pick up later status
+  changes (see "Cursors").
+- **One Spoke organization for several Shore campaigns.** v1 assumes one Spoke organization
+  per Shore campaign. The organization ID is in every URL and every config key is read per
+  organization, so this can be added later.
 
 ## Where the code lives
 
-- **Repository:** a public fork of [ProgressiveCoders/Spoke](https://github.com/ProgressiveCoders/Spoke)
-  (GPLv3, last release v14.1.2, Oct 2024), on a long-lived `shore` branch with upstream's
-  `main` tracked for rebases. The fork stays GPLv3.
-- **Files touched:** only new folders. Spoke loads extensions by folder name from its
-  configuration settings, so no registry files change:
-  - `src/extensions/contact-loaders/shore/` (`index.js`, `react-component.js`)
-  - `src/extensions/service-managers/shore/` (`index.js`, plus `react-component.js` only if
-    org settings get a UI; see "Configuration")
-  - `src/extensions/shore-common/` for code both share: config, request signing, the HTTP
-    client. Put it under the loader instead if Spoke's build doesn't pick up a new top-level
-    extensions folder.
-  - `__test__/extensions/shore/` for tests.
-  - `docs/HOWTO-integrate-with-shore.md`
-- **Upstreaming:** written so it could be offered upstream, as the CiviCRM loader was:
-  nothing campaign-specific, everything set through configuration.
+This fork of [ProgressiveCoders/Spoke](https://github.com/ProgressiveCoders/Spoke) (GPLv3),
+tracking upstream `main` for rebases. New files only:
+
+```
+src/extensions/contact-loaders/shore/
+  index.js              loader interface + addServerEndpoints
+  react-component.js    segment picker (CampaignContactsForm)
+  lib/config.js         reads and validates the config keys
+  lib/signing.js        HMAC signing and verification
+  lib/shore-client.js   HTTP client for Shore's endpoints
+  lib/routes.js         mounts /integrations/shore/v1/:organizationId
+  lib/auth.js           organization + signature check for every route
+  lib/opt-outs.js       POST /opt-outs
+  lib/read-api.js       the outbound read endpoints and their queries
+__test__/extensions/contact-loaders/shore/
+docs/HOWTO-integrate-with-shore.md
+```
+
+Keeping the shared code under the loader folder avoids relying on Spoke's build picking up
+a new top-level extensions folder.
 
 ## Configuration
 
-Read with Spoke's `getConfig(key, organization)`. A key in the organization's `features` JSON
-wins over the environment variable, so one Spoke can serve several organizations later.
+Read with Spoke's `getConfig(key, organization)`: a key in the organization's `features` JSON
+wins over the environment variable.
 
-| Key | Required | Meaning |
-|---|---|---|
-| `CONTACT_LOADERS` | yes | Include `shore` (e.g. `shore,csv-upload`). |
-| `SERVICE_MANAGERS` | yes | Include `shore`. |
-| `SHORE_URL` | yes | Shore's origin, e.g. `https://app.shore.vote`. HTTPS only, except `http://localhost` in development. |
-| `SHORE_CAMPAIGN` | yes | The campaign's slug in Shore. |
-| `SHORE_INTEGRATION_KEY` | yes | The shared key both sides sign requests with (see "Security"). At least 32 random characters. Shore shows it once, when an admin creates it. Separate from `TOKEN_AUTH_SHARED_SECRET`. |
-| `SHORE_CACHE_SECONDS` | no | How long the segment list is cached in the campaign editor. Default 60. |
-| `SHORE_TIMEOUT_MS` | no | Timeout for each request to Shore. Default 10000. |
+| Key | Required | Where | Meaning |
+|---|---|---|---|
+| `CONTACT_LOADERS` | yes | **environment only** | Include `shore` (e.g. `shore,csv-upload`). Spoke reads this one key from the environment at startup to decide which loaders exist and which mount endpoints, and the browser reads it from `global.CONTACT_LOADERS`, so it can't be set per organization. |
+| `SHORE_URL` | yes | env or org | Shore's origin, e.g. `https://app.shore.vote`. HTTPS only, except `http://localhost` in development. |
+| `SHORE_CAMPAIGN` | yes | env or org | The campaign's slug in Shore. |
+| `SHORE_INTEGRATION_KEY` | yes | env or org | The shared signing key (see "Security"). At least 32 random characters. Separate from `TOKEN_AUTH_SHARED_SECRET`. |
+| `SHORE_CACHE_SECONDS` | no | env or org | How long the segment list is cached in the campaign editor. Default 60. |
+| `SHORE_TIMEOUT_MS` | no | env or org | Timeout for each request to Shore. Default 10000. |
+| `SHORE_SETTLE_SECONDS` | no | env or org | How long a new row is held back from the read feeds (see "Cursors"). Default 15. |
 
-`available()` is true for both extensions only when the required keys are set and
-`SHORE_URL` parses.
+`available()` is true only when the required keys are set for the organization and
+`SHORE_URL` parses. The endpoints run the same check and answer 404 when it fails.
 
 ## Security
 
@@ -96,36 +119,46 @@ wins over the environment variable, so one Spoke can serve several organizations
 `SHORE_INTEGRATION_KEY`:
 
 - Headers: `X-Shore-Timestamp` (Unix seconds) and `X-Shore-Signature`, the hex HMAC of
-  `${timestamp}.${method}.${path-with-query}.${body}` (body empty for GET).
-- The receiver compares in constant time and rejects a timestamp more than 300 seconds
-  from its own clock.
-- There's no separate replay store. Each operation is idempotent, so a replay inside the
-  window does nothing new.
+  `${timestamp}.${method}.${path-with-query}.${rawBody}` (body empty for GET).
+- The receiver compares in constant time and rejects a timestamp more than 300 seconds from
+  its own clock.
+- No replay store: every write is idempotent and every read is safe to repeat.
+
+**Getting the raw body without touching core.** Spoke parses JSON for the whole app
+(`bodyParser.json()` in `src/server/index.js`) before loader routes are mounted, which would
+throw away the bytes the signature covers. So Shore sends its POST bodies as
+`Content-Type: application/vnd.shore+json`. Spoke's global parsers only match
+`application/json` and form encoding, so they leave that body alone, and the extension's
+route reads it with `bodyParser.raw({ type: "application/vnd.shore+json", limit: "256kb" })`,
+verifies the signature over those bytes, then parses the JSON itself. A request with any
+other content type gets 415. Tests must prove the global parser doesn't consume the body.
+
+**Endpoint checks.** The endpoints ignore Spoke's session cookie and sign-in entirely. They
+accept only a valid signature under the key configured for the organization in the path,
+and answer 404 for an unknown organization or one without the configuration, before
+checking the signature.
 
 **Personal data.**
 
-- No cell numbers, names, or other personal data in Spoke's logs. Log counts, Spoke IDs,
-  and Shore's request IDs only.
-- Only the opt-out endpoint and the HTTP client handle cell numbers.
+- No cell numbers, names or message text in Spoke's logs. Log counts, Spoke IDs and Shore's
+  request IDs only.
+- The read endpoints return personal data (cells, names, message text) only to a correctly
+  signed request, over HTTPS.
 - Contacts arrive from Shore over HTTPS and go straight into `campaign_contact`. Nothing is
   written to disk or a temp file.
 
-**Endpoint checks.** The Spoke endpoint takes no session cookie and isn't reachable through
-Spoke's sign-in. It accepts only a valid signature for the organization in its path, and it
-answers 404 for an unknown organization or one without the configuration.
+**Shore's side.** Shore must keep the key itself, not a hash: the same key both signs
+Shore's requests and checks Spoke's, so Shore stores it encrypted (for example with a
+secret manager) and scopes every request to the campaign it belongs to.
 
-**Shore's side.** Shore stores only a hash of the key. It resolves the campaign from
-`SHORE_CAMPAIGN` and the signature, and sets row-level security for that campaign before
-any read (data-rules 1), like its webhooks.
+## Part 1: loading lists
 
-## Contract: Shore's endpoints (Spoke → Shore)
+### Shore's endpoints (Spoke → Shore)
 
-All under `${SHORE_URL}/api/spoke/v1/:campaign`, signed, JSON. The error body is
+All under `${SHORE_URL}/api/spoke/v1/:campaign`, signed, JSON. Error body:
 `{ "error": "<code>" }`.
 
-### `GET /segments`
-
-The campaign's segments, for the picker.
+#### `GET /segments`
 
 ```json
 {
@@ -141,41 +174,23 @@ The campaign's segments, for the picker.
 }
 ```
 
-`textableCount` is how many contacts a load would return right now (it can change before
-the load).
+`textableCount` is how many contacts a load would return right now.
 
-### `POST /segments/:segmentId/loads`
+#### `POST /segments/:segmentId/loads`
 
 Starts a load. Shore works out who's in the segment, keeps only people it may text, and
-saves that list as a snapshot so the pages below stay consistent.
+saves a snapshot so the pages stay consistent.
 
-**What Shore may text:** a mobile number that isn't marked bad or wrong, no text opt-out on
-that number, and no text suppression on the person. This is Shore's consent check; the
-extension never decides it. If legal L11 or L22 calls for a text opt-in, Shore adds that
-here. Each person appears once, under the number Shore's "best number to text" rule picks
-(roadmap P1-E10): never a known landline, and for an opted-in list only a number with a
-current opt-in. That's not necessarily their preferred number.
+**What Shore may text** is Shore's decision, never the extension's: a mobile number that
+isn't marked bad, no text opt-out on that number, no text suppression on the person. Each
+person appears once, under Shore's "best number to text."
 
-**Request:**
+Request: `{ "spokeCampaignId": 12, "spokeCampaignTitle": "GOTV week 1", "spokeJobId": 345 }`
+Response: `{ "loadId": "uuid", "count": 398 }`
 
-```json
-{ "spokeCampaignId": 12, "spokeCampaignTitle": "GOTV week 1", "spokeJobId": 345 }
-```
+Idempotent: the same `spokeJobId` returns the same `loadId`. Shore audits each load.
 
-**Response:**
-
-```json
-{ "loadId": "uuid", "count": 398 }
-```
-
-**Audit:** Shore records the load (who, segment, Spoke campaign, count) in its audit log.
-Shore may also put "added to Spoke campaign …" on each person's timeline.
-
-**Idempotent:** the same `spokeJobId` returns the same `loadId`.
-
-### `GET /loads/:loadId/contacts?cursor=…&limit=1000`
-
-One page of the snapshot. Pages expire an hour after the load starts.
+#### `GET /loads/:loadId/contacts?cursor=…&limit=1000`
 
 ```json
 {
@@ -193,222 +208,368 @@ One page of the snapshot. Pages expire an hour after the load starts.
 }
 ```
 
-- **`cell`:** always E.164.
-- **`zip`:** five digits or null.
-- **`customFields`:** a short, documented list that Shore owns. Scripts use the fields as
-  `{preferredName}` and the like. No voter-file fields in v1 (data-rules 12 keeps voter
-  data in our own systems; Spoke is ours, but keep the first version minimal and decide this
-  on purpose).
-- **`limit`:** 5000 at most.
+`cell` is E.164; `zip` is five digits or null; `limit` is at most 5000. Pages expire an
+hour after the load starts.
 
-### `POST /opt-outs`
+**`customFields`** is a fixed list Shore owns and documents. Spoke learns a campaign's
+custom field names from its **first** contact only (`dbCustomFields` in
+`src/server/models/cacheable_queries/campaign.js`), so every contact in a load carries
+**every key**, with `""` when Shore has no value. Otherwise a field missing from the first
+contact can't be used in the script at all.
 
-The service manager reports an opt-out recorded in Spoke.
+| Field | v1 | Meaning |
+|---|---|---|
+| `preferredName` | yes | What the person likes to be called; falls back to first name. |
+| `city` | yes | City of the person's address. |
+| `pollingPlaceName` | yes, often empty | Name of the person's election-day voting location. |
+| `pollingPlaceAddress` | yes, often empty | Its street address. |
+| `precinct` | yes, often empty | Precinct name or code. |
+| `earlyVoteInfo` | later | Nearest early-vote site and hours. |
+| `volunteerRoles` | later | Short, comma-separated list for volunteer recruitment scripts. |
 
-**Request:**
+The voting-location fields are in v1 even though Shore may not have the data yet, so the
+contract and scripts don't change when it does; until then they're `""`. Script writers
+should only use them in campaigns whose segments Shore fills them for. ZIP isn't a custom
+field: it's the standard `zip` column, which sets the contact's timezone and is already
+usable in scripts as `{zip}`. Because keys are
+fixed per Shore release, adding a field later is a contract change on Shore's side only; the
+extension passes `customFields` through as-is.
 
-```json
-{
-  "cell": "+15555550123",
-  "reason": "stop",
-  "spokeOrganizationId": 1,
-  "spokeCampaignId": 12,
-  "spokeCampaignContactId": 9876,
-  "externalId": "person uuid or null",
-  "occurredAt": "2026-11-01T14:05:00Z"
-}
-```
+### The loader
 
-**Response:** `{ "recorded": true }`, or `{ "recorded": false, "reason": "already_opted_out" }`.
+Modeled on `contact-loaders/civicrm` (picker and choice data) and
+`contact-loaders/redash` (failure handling).
 
-Shore records a text opt-out on that number in `consents` (source `spoke`), even when the
-number matches no person (data-rules 4).
-
-**Idempotent:** Shore keys the record on `spoke:${spokeOrganizationId}:${cell}:${occurredAt}`,
-and a number that's already opted out is a no-op. Shore's database read of `opt_out` also
-catches anything this call misses.
-
-## Contract: the extension's endpoint (Shore → Spoke)
-
-### `POST ${SPOKE_BASE_URL}/integrations/shore/:organizationId/opt-outs`
-
-Signed, JSON. Shore calls it within 5 minutes of recording a text opt-out or suppression,
-retrying with backoff until it gets a 2xx. A suppression applies to every mobile number
-the person has.
-
-**Request:**
-
-```json
-{ "cells": ["+15555550123"], "reason": "shore:manual", "shoreRequestId": "uuid" }
-```
-
-**Behavior:**
-
-- **Validation:** check the signature, then the organization (it exists, and its config
-  names this `SHORE_CAMPAIGN`).
-- **For each cell (at most 500 per request):**
-  1. Normalize it with Spoke's `getFormattedPhoneNumber`. Skip cells that don't parse, and
-     count them.
-  2. If it's already opted out in this organization (`cacheableData.optOut.query`), skip it
-     and count it.
-  3. Otherwise call `cacheableData.optOut.save` with these arguments:
-     - `cell`
-     - `campaign: { organization_id }`, so no real campaign is needed (the save only reads
-       `organization_id`)
-     - `assignmentId: null` (the `opt_out.assignment_id` column is nullable)
-     - `reason`: `shore:` plus Shore's reason code
-     - `noReply: false`
-
-     This is Spoke's own path for a STOP reply. It updates the Redis cache, adds the
-     `opt_out` row, and marks the number opted out on active campaigns' contacts.
-- **Response:** `{ "optedOut": n, "alreadyOptedOut": n, "invalid": n }`.
-- **Idempotent:** by checking existing state first. `shoreRequestId` is only for logs.
-
-**No loop:** `save` triggers service managers' `onOptOut`, including ours. The service
-manager must skip opt-outs whose `reason` starts with `shore:`, so they aren't sent back to
-Shore.
-
-## Design: the contact loader (`contact-loaders/shore`)
-
-Modeled on `contact-loaders/civicrm`.
-
-**`displayName()`** returns "Shore segment".
-
-**`serverAdministratorInstructions()`** lists the required config keys and links to the
-HOWTO.
-
-**`available(organization, user)`** checks the config only, with no network call:
-
-```js
-{ result, expiresSeconds: 60 }
-```
-
-**`clientChoiceDataCacheKey(campaign)`** keys on the campaign's organization ID.
-
-**`getClientChoiceData(organization, campaign, user)`** calls `GET /segments` and returns
-`{ data: JSON.stringify({ segments }), expiresSeconds: SHORE_CACHE_SECONDS }`. If Shore is
-unreachable it returns `{ data: JSON.stringify({ error: "shore_unreachable" }) }` so the
-component can show it.
-
-**`react-component.js` (`CampaignContactsForm`):**
-
-- A segment picker showing name, description, and textable count, with a refresh button
-  and the time the counts were taken.
-- On save, it sends `{ segmentId, segmentName }` as the loader's payload.
-- Same props and validation pattern as the CiviCRM component.
+- **`displayName()`**: "Shore segment".
+- **`serverAdministratorInstructions()`**: the config keys and a link to the HOWTO.
+- **`available(organization, user)`**: config check only, no network call;
+  `{ result, expiresSeconds: 60 }`.
+- **`clientChoiceDataCacheKey(campaign)`**: the organization ID.
+- **`getClientChoiceData(organization, campaign, user)`**: calls `GET /segments`; returns
+  `{ data: JSON.stringify({ segments }), expiresSeconds: SHORE_CACHE_SECONDS }`, or
+  `{ data: JSON.stringify({ error: "shore_unreachable" }), expiresSeconds: 0 }` when Shore
+  can't be reached.
+- **`react-component.js`**: a segment picker with name, description and textable count, and
+  the time the counts were taken. Saves `{ segmentId, segmentName }` as the payload. No
+  refresh button: Spoke gives loader components no way to refetch their choice data, so the
+  list refreshes when the page is reloaded after `SHORE_CACHE_SECONDS`.
 
 **`processContactLoad(job, maxContacts, organization)`:**
 
-1. Parse `job.payload`, then delete the campaign's existing `campaign_contact` rows (a new
-   choice replaces the old one, as every loader does).
-2. Start the load with `POST /segments/:id/loads`, passing `spokeCampaignId`,
-   `spokeCampaignTitle` and `spokeJobId`.
+1. Parse `job.payload` and delete the campaign's existing `campaign_contact` rows.
+2. `POST /segments/:id/loads` with `spokeCampaignId`, `spokeCampaignTitle`, `spokeJobId`.
 3. Page through `GET /loads/:id/contacts` until `nextCursor` is null, stopping at
-   `maxContacts` if it's set. For each contact:
-   - Map it to a row:
-     - `first_name`, `last_name`, `zip`, `external_id`
-     - `cell`, run through `getFormattedPhoneNumber` (don't trust either side's
-       formatting)
-     - `custom_fields` as a JSON string
-     - `message_status: "needsMessage"`
-     - `campaign_id`
-     - `timezone_offset` from `getTimezoneByZip(zip)`, when there's a ZIP
-   - Keep the last row per cell, as Spoke does.
-   - Insert in batches of 1000 with `r.knex.batchInsert`.
-4. Call `completeContactLoad(job, null, String(segmentId), JSON.stringify({ finalCount, segmentName, loadId }))`.
-   This also removes opted-out numbers and duplicates on Spoke's side, as a second check.
-5. On any error, call Spoke's failed-load path (`failedContactLoad`, as the CiviCRM loader
-   does) with a short code (`shore_unreachable`, `shore_rejected`, `load_expired`). The
-   message never includes personal data.
+   `maxContacts` if set. Map each contact to a row: `first_name`, `last_name`, `zip`,
+   `external_id`, `cell` (through `getFormattedPhoneNumber`), `custom_fields` (JSON string),
+   `message_status: "needsMessage"`, `campaign_id`, and `timezone_offset` from
+   `getTimezoneByZip(zip)` when there's a ZIP. Last row wins for a repeated cell. Insert in
+   batches of 1000 with `r.knex.batchInsert`.
+   Rows are inserted in Shore's order, and `completeContactLoad` keeps the highest ID per
+   cell, which is what makes the last row win.
+4. `completeContactLoad(job, null, reference, result)`, where `reference` is
+   `{ segmentId, segmentName, loadId }` and `result` is
+   `{ finalCount, invalidCellCount, loadId }` (both JSON strings). This also removes
+   opted-out numbers and duplicates on Spoke's side.
+5. On any error, delete any rows already inserted (so a failed load never leaves a partial
+   list), then `failedContactLoad(job, null, reference, JSON.stringify({ errors: [code] }))`.
+   Codes: `not_configured`, `segment_required`, `segment_not_found`, `shore_unreachable`,
+   `shore_rejected`, `shore_bad_response`, `load_expired`, `load_error`. No personal data in
+   the message.
 
-**`addServerEndpoints(expressApp)`** mounts the opt-out endpoint above. Loaders are the
-extension type with this hook. Spoke calls it at startup whether or not the loader is
-available, so the handler itself checks the config and answers 404 when it isn't set.
+## Part 2: interactions into Shore (the read API)
 
-## Design: the service manager (`service-managers/shore`)
+### Why polling
 
-```js
-export const name = "shore";
-export const metadata = () => ({
-  displayName: "Shore",
-  description: "Tells Shore when someone opts out in Spoke.",
-  canSpendMoney: false,
-  moneySpendingOperations: [],
-  supportsOrgConfig: false,
-  supportsCampaignConfig: false
-});
+A push from Spoke would have to run inside Spoke's hot paths (a texter's request, an
+incoming message), and the hooks there don't get everything we need without core changes:
+for example, service managers' `onOptOut` isn't given the cell number, and for STOP replies
+the contact is often not loaded. Polling avoids all of that:
+
+- Nothing in Spoke's texting path calls Shore, so Shore being slow or down never slows
+  texting.
+- Shore controls the pace (every 30–60 seconds is the target) and can catch up after an
+  outage just by continuing from its cursor.
+- Every change is captured, whichever code path made it, because the endpoints read the
+  tables Spoke writes.
+
+### Endpoints (Shore → Spoke)
+
+All under `${SPOKE_BASE_URL}/integrations/shore/v1/:organizationId`, signed GETs, JSON, scoped
+to that organization. Every list endpoint takes `afterId` (default 0) and `limit` (default
+500, at most 2000), returns rows in ascending `id`, and returns `nextAfterId` (the last
+`id` in the page, or the input when the page is empty).
+
+#### `GET /campaigns?afterId=…`
+
+Campaigns in the organization with their survey definitions, so Shore can turn interaction
+step IDs into questions and answers.
+
+```json
+{
+  "campaigns": [
+    {
+      "id": 12,
+      "title": "GOTV week 1",
+      "isStarted": true,
+      "isArchived": false,
+      "createdAt": "2026-11-01T14:00:00Z",
+      "shoreLoad": { "segmentId": "uuid", "segmentName": "Pledged", "loadId": "uuid" },
+      "interactionSteps": [
+        {
+          "id": 31,
+          "parentInteractionId": null,
+          "answerOption": "",
+          "question": "Can we count on your vote?",
+          "isDeleted": false
+        }
+      ]
+    }
+  ]
+}
 ```
 
-Implement only `onOptOut` (any other hook would add cost, as Spoke's own docs warn).
+`shoreLoad` comes from the campaign's last successful Shore contact load, or null.
+Campaigns have no update time to page on, so Shore re-reads the whole list (it's small)
+on each poll.
 
-**`onOptOut({ organization, contact, campaign, reason })`:**
+#### `GET /messages?afterId=…`
 
-- Return straight away if `reason` starts with `shore:`, or the config isn't set.
-- Otherwise `POST /opt-outs` with:
-  - the contact's cell, `external_id`, and campaign contact ID;
-  - the campaign ID and organization ID;
-  - the reason;
-  - the current time.
-- It runs inside Spoke's request (a texter's or an incoming message's), so:
-  - **Timeout:** `SHORE_TIMEOUT_MS`, at most 3 seconds here.
-  - **Retries:** one retry, then give up.
-  - **Errors:** never throw. Log a warning with the Spoke IDs only.
-- Shore's database read is the backstop for anything this misses.
+```json
+{
+  "messages": [
+    {
+      "id": 1001,
+      "campaignId": 12,
+      "campaignContactId": 9876,
+      "externalId": "person uuid",
+      "contactNumber": "+15555550123",
+      "isFromContact": false,
+      "text": "Hi Testy, …",
+      "sendStatus": "DELIVERED",
+      "userId": 7,
+      "createdAt": "2026-11-01T14:05:00Z"
+    }
+  ],
+  "nextAfterId": 1001
+}
+```
+
+Joined `message → campaign_contact → campaign`, filtered on `campaign.organization_id`.
+`externalId` is the contact's `external_id` (Shore's person ID for contacts Shore loaded).
+
+#### `GET /question-responses?afterId=…`
+
+New survey answers: `{ id, campaignId, campaignContactId, externalId, interactionStepId, value, createdAt }`.
+
+Spoke changes an answer by deleting and reinserting rows, so a changed answer shows up here
+as a new row for the same contact and step; the newest row wins. A cleared answer (deleted
+with nothing reinserted) doesn't show up here at all; the contact-state endpoint below
+covers that.
+
+#### `GET /tags?afterId=…`
+
+New tags on contacts: `{ id, campaignId, campaignContactId, externalId, tagId, tagName, value, createdAt }`,
+from `tag_campaign_contact` joined to `tag`.
+
+#### `GET /opt-outs?afterId=…`
+
+Every opt-out recorded in the organization, whatever recorded it:
+`{ id, cell, reasonCode, assignmentId, createdAt }`. Rows whose `reasonCode` starts with
+`shore:` are the ones Shore sent (Part 3); Shore can skip them.
+
+#### `GET /campaigns/:campaignId/contact-state?afterContactId=…&limit=…`
+
+The current state of each contact in a campaign, for reconciling and for anything the
+append-only feeds miss (cleared answers, removed tags):
+
+```json
+{
+  "contacts": [
+    {
+      "campaignContactId": 9876,
+      "externalId": "person uuid",
+      "messageStatus": "convo",
+      "isOptedOut": false,
+      "questionResponses": [{ "interactionStepId": 31, "value": "Yes" }],
+      "tags": [{ "tagId": 4, "tagName": "Needs a ride", "value": null }]
+    }
+  ],
+  "nextAfterContactId": 9876
+}
+```
+
+Shore runs this per active campaign on a slow schedule (e.g. hourly) and after a campaign
+is archived.
+
+### Cursors
+
+- **IDs, not timestamps.** Each feed pages on its table's primary key, which is indexed.
+  None of these tables has an indexed update time we could page on without a migration.
+- **Late commits.** Two inserts can commit out of ID order, so a fast reader could pass an
+  ID that commits a moment later. Each feed only returns rows created more than 15 seconds
+  ago, and Shore may also re-read a trailing window (for example, from the cursor it had
+  five minutes ago). Shore stores by Spoke ID, so re-reading is harmless.
+- **Message status.** Re-reading the trailing window also picks up later `send_status`
+  changes (delivered, error), which update the row in place.
+
+### Cost
+
+Each request is one indexed range scan joined to `campaign_contact` and `campaign`. With
+Shore polling four feeds once a minute this is a handful of small queries a minute, well
+below what Spoke's own texter screens do. The queries go to the primary database through
+Spoke's `r.knex`, not `r.knexReadOnly`: a read replica that lags by more than the settle
+window could hide rows behind Shore's cursor.
+
+**Known limit:** each feed walks its table's IDs and keeps only this organization's rows. On
+a Spoke that hosts other busy organizations, a quiet organization's poll scans past their
+rows. That's fine for v1 (one organization per Spoke); a multi-organization version would
+add an ID window per request.
+
+## Part 3: opt-outs into Spoke
+
+### `POST ${SPOKE_BASE_URL}/integrations/shore/v1/:organizationId/opt-outs`
+
+Signed, `Content-Type: application/vnd.shore+json`. Shore calls it as soon as it records a
+text opt-out or suppression (a suppression covers every mobile number the person has),
+retrying with backoff until it gets a 2xx and alerting its admins if it can't deliver within
+5 minutes.
+
+**Request:**
+
+```json
+{ "cells": ["+15555550123"], "reason": "manual", "shoreRequestId": "uuid" }
+```
+
+`reason` is optional (default `optout`) and limited to letters, digits and `_ . : -`, up to
+64 characters. A request with any content type other than `application/vnd.shore+json`
+gets 415, before anything else is checked.
+
+**For each cell (at most 500 per request):**
+
+1. Normalize with `getFormattedPhoneNumber`. Skip and count cells that don't parse.
+2. If already opted out (`cacheableData.optOut.query({ cell, organizationId })`), skip and
+   count it.
+3. Find the most recent `campaign_contact` with that cell in the organization, if any, so
+   other service managers get a real contact and campaign.
+4. Call `cacheableData.optOut.save` with `cell`; `campaign` (that contact's campaign, or
+   `{ organization_id }` when there's none); `contact` (that contact, or `{ cell }`);
+   `campaignContactId`; `assignmentId: null`; `reason: "shore:" + reason`;
+   `noReply: false`; `organization`.
+
+   This is Spoke's STOP path: it updates Redis, inserts the `opt_out` row, and marks the
+   number opted out on contacts in active campaigns.
+
+5. `save` writes the opt-out **before** it runs service managers' `onOptOut`. Wrap the call
+   in `try/catch`: if a service manager throws (for example `civicrm-donotsms` reads
+   `contact.external_id` and calls CiviCRM), the opt-out is already recorded, so log a
+   warning with Spoke IDs only and count it as opted out. If the row isn't there, count it
+   as failed.
+
+A cell repeated in the same request counts as already opted out.
+
+**Response:** `{ "optedOut": n, "alreadyOptedOut": n, "invalid": n, "failed": n }`, with
+status 200, or 500 when `failed` is more than 0 so Shore retries the request (the cells
+already done are skipped next time).
+
+**Idempotent:** state is checked first, so repeats do nothing. `shoreRequestId` is for logs.
+
+**No loop:** these opt-outs come back out of `GET /opt-outs` with a `shore:` reason, and
+Shore skips them.
+
+**Speed:** with the request going straight through Spoke's own path, the number is opted out
+in Redis and the database within the request, typically well under a second after Shore
+sends it. If Spoke is unreachable, Shore keeps retrying, and in the meantime the next
+contact load still leaves the number out, because Shore won't return it.
+
+## Fallback: reading Spoke's database
+
+If an API endpoint can't meet a need (for example, a bulk historical backfill), Shore may
+read Spoke's database directly with a **read-only** role limited to `message`,
+`question_response`, `interaction_step`, `tag`, `tag_campaign_contact`, `opt_out`,
+`campaign` and `campaign_contact`. Rules:
+
+- Reads only. Shore never writes to Spoke's tables; every write goes through an endpoint so
+  Spoke's cache stays correct.
+- Treat it as a schema dependency: anything Shore reads this way must be rechecked on every
+  upstream Spoke upgrade.
+- Prefer adding an endpoint over widening this.
 
 ## Failure behavior
 
 | Situation | What happens |
 |---|---|
-| Shore is down while a campaign is being built | The segment picker says so; the load fails with `shore_unreachable` and can be retried. Nothing half-loaded is left: rows are deleted before the load, and Spoke marks the job failed. |
-| A load page expires mid-load | Fails with `load_expired`; retry starts a fresh load. |
-| Shore can't reach Spoke for an opt-out | Shore retries with backoff and alerts its admins if it can't deliver within 5 minutes (the rule). Until then, Spoke's next contact load still filters the number out, because Shore wouldn't return it. |
-| Spoke can't reach Shore for an opt-out | Logged and dropped. Shore's database read records it within minutes. |
-| Clock skew over 300 seconds | Signed requests fail with 401 in both directions. HOWTO tells admins to run NTP (Cloud Run already does). |
+| Shore is down while a campaign is being built | The picker says so; the load fails with `shore_unreachable` and can be retried. Rows are deleted before the load and Spoke marks the job failed, so nothing half-loaded is left as a success. |
+| A load page expires mid-load | Fails with `load_expired`; retrying starts a fresh load. |
+| Shore can't reach Spoke to send an opt-out | Shore retries with backoff and alerts within 5 minutes. Spoke's next contact load still leaves the number out. |
+| Spoke can't be polled | Shore resumes from its cursors when Spoke is back; nothing is lost. |
+| Another service manager fails during a Shore opt-out | The opt-out is already saved; the extension logs and carries on. |
+| Clock skew over 300 seconds | Signed requests fail with 401 in both directions. The HOWTO tells admins to run NTP. |
 
-## Tests (in the fork, Spoke's Jest setup)
+## Tests (Spoke's Jest setup)
 
-- **Signing:** valid, wrong key, stale timestamp, a tampered body or path.
-- **Loader:**
-  - The segment list and its error state.
-  - Paging, with the `maxContacts` cap.
-  - Mapping, including the E.164 cell, timezone from ZIP, and `custom_fields`.
-  - Last row wins for a repeated cell.
-  - Existing contacts are replaced.
-  - A failed load reports its code.
-  - Shore is faked with nock or a stub server, using fake data only.
-- **Opt-out endpoint:**
-  - Records through `optOut.save`, with Redis and without (Spoke's tests can run both).
-  - An already opted-out number is a no-op.
-  - Bad cells are counted, not saved.
-  - Unknown org, missing config, and bad signature return 404 or 401.
-  - Contacts on archived campaigns are untouched, as with Spoke's own opt-outs.
-- **Service manager:**
-  - Posts on a STOP.
-  - Skips `shore:` reasons.
-  - Never throws when Shore times out or errors.
+- **Signing:** valid; wrong key; stale timestamp; tampered body, path or query.
+- **Raw body:** a `application/vnd.shore+json` POST reaches the route with its bytes intact
+  through Spoke's real app setup; `application/json` gets 415.
+- **Loader:** segment list and its error state; paging and the `maxContacts` cap; mapping
+  (E.164 cell, timezone from ZIP, `custom_fields`); last row wins; existing contacts
+  replaced; failed load reports its code. Shore faked with nock, fake data only.
+- **Opt-out endpoint:** records through `optOut.save` with and without Redis; already
+  opted-out is a no-op; bad cells counted, not saved; unknown org, missing config and bad
+  signature give 404 or 401; a throwing service manager doesn't fail the request; archived
+  campaigns' contacts untouched, as with Spoke's own opt-outs.
+- **Read endpoints:** each feed pages by ID, respects the organization (rows from another
+  organization never appear), applies the 15-second settle window, and returns a changed
+  answer as a new row; contact state reflects a cleared answer; `limit` capped.
 
-## Shore's side (this repo, roadmap P1-E10)
+## Shore's side
 
-Built in Shore once this design is approved, with its own tests:
+Built in Shore, with its own tests:
 
-- **Settings:** a "Spoke extension" key in Settings → Connections, created and shown once,
-  with only its hash stored, alongside the existing Spoke sign-in settings.
-- **Endpoints:** the four Spoke-facing endpoints above (segment list, start load, contact
-  pages, opt-out report), signed, scoped to the campaign, and audited.
-- **Push job:** sends new text opt-outs and suppressions to Spoke within 5 minutes,
-  retrying, and alerting when it can't.
-- **Database read:** messages, survey answers, tags, and `opt_out` from Spoke's database,
-  read-only, onto timelines and into `consents`. This is separate from the extensions.
+- **Settings:** a "Spoke extension" key, created and shown once, stored encrypted (not
+  hashed; Shore needs it to sign requests).
+- **Endpoints:** the three list-loading endpoints in Part 1, signed, campaign-scoped,
+  audited.
+- **Poller:** reads the Part 2 feeds every 30–60 seconds, stores cursors, re-reads a
+  trailing window, runs contact-state reconciliation hourly per active campaign, and writes
+  to timelines and `consents`.
+- **Opt-out push:** sends new text opt-outs and suppressions to Part 3 within seconds,
+  retrying, and alerting when it can't deliver within 5 minutes.
 
-## Decisions needed (founder)
+## Changes from the first draft
 
-1. **Approve the fork.** CLAUDE.md requires sign-off before any Spoke source is copied or
-   modified. Also choose whose GitHub account hosts the fork.
-2. **Shared-key signing** (HMAC, one key per campaign), rather than separate bearer tokens
-   in each direction.
-3. **Text consent rule for loads:** "opted out or suppressed means excluded" (today's rule),
-   or also require a text opt-in? This depends on legal L11 and L22.
-4. **Custom fields in v1:** preferred name and city only, or more (pledge status, volunteer
-   roles)? No voter-file fields without a separate decision.
-5. **Timeline entries:** should each person's timeline note "added to Spoke campaign …" when
-   they're loaded?
+- **Versioned Spoke paths (2026-11-02):** Spoke's endpoints moved to
+  `/integrations/shore/v1/...`, matching Shore's `/api/spoke/v1/...`, before anything was
+  deployed.
+- **Shore keeps the key, encrypted, not a hash (2026-11-02):** HMAC needs the secret on both
+  sides.
+- **Everything in the contact loader; no service manager.** Spoke's `onOptOut` hook isn't
+  given the cell number, and for STOP replies the contact is usually not loaded, so the
+  service manager couldn't reliably report opt-outs without a core change. Opt-outs now
+  reach Shore through `GET /opt-outs`.
+- **Interactions through an API, not a database login.** Messages, survey answers and tags
+  were going to be read straight from Spoke's database; they now come from read endpoints
+  the extension owns. Direct reads remain a documented fallback.
+- **Raw body via a vendor content type.** Spoke parses JSON globally before loader routes,
+  so signature checks over the body need a content type the global parser ignores.
+- **Shore's opt-outs survive other service managers.** The save is wrapped and a real
+  contact is passed where one exists, because `civicrm-donotsms` and others assume a
+  contact.
+- **`CONTACT_LOADERS` must be an environment variable**, not an organization setting.
+- **Failure handling follows the `redash` loader**, which calls `failedContactLoad`; the
+  CiviCRM loader doesn't.
+
+## Decisions made
+
+- **Signing (2026-11-01):** one shared HMAC key per Shore campaign, used in both directions.
+  A Shore campaign maps to one Spoke organization, and the key is stored on that
+  organization.
+- **Text consent for loads (2026-11-01):** no opt-in required; this is peer-to-peer texting.
+  A load excludes anyone opted out or suppressed, as Shore decides.
+- **Custom fields (2026-11-01):** the v1 list in Part 1, including voting-location fields
+  sent empty until Shore has the data.
+- **Poll interval (2026-11-01):** Shore's setting, not part of Spoke's design. The
+  endpoints are cheap, safe to repeat and independent of how often they're called; the
+  15-second settle window and page limits don't depend on it. Start at 30–60 seconds.
+
+- **Message content (2026-11-01):** Shore receives each message's full text, direction
+  (`isFromContact`), send status and time, as in `GET /messages`.
