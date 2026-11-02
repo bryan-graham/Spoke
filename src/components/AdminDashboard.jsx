@@ -1,63 +1,19 @@
 import PropTypes from "prop-types";
 import React from "react";
-import { StyleSheet, css } from "aphrodite";
-import theme from "../styles/theme";
 import { hasRole } from "../lib";
 import TopNav from "./TopNav";
 import { gql } from "@apollo/client";
 import { withRouter } from "react-router";
 import loadData from "../containers/hoc/load-data";
-import AdminNavigation from "../containers/AdminNavigation";
-const styles = StyleSheet.create({
-  container: {
-    ...theme.layouts.multiColumn.container
-  },
-  sidebar: {
-    minHeight: "calc(100vh - 65px)"
-  },
-  content: {
-    ...theme.layouts.multiColumn.flexColumn,
-    paddingLeft: "2rem",
-    paddingRight: "2rem",
-    margin: "24px auto"
-  }
-});
+import ShoreShell from "./ShoreShell/ShoreShell";
 
+// Admin pages inside the Shore shell. The sidebar (with Spoke's pages as
+// sub-items under Texting) comes from ShoreShell; this works out the page
+// title and back link.
 class AdminDashboard extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      showMenu: true
-    };
-
-    this.handleToggleMenu = this.handleToggleMenu.bind(this);
-  }
   urlFromPath(path) {
     const organizationId = this.props.params.organizationId;
     return `/admin/${organizationId}/${path}`;
-  }
-
-  async handleToggleMenu() {
-    await this.setState({ showMenu: !this.state.showMenu });
-  }
-
-  renderNavigation(sections) {
-    const organizationId = this.props.params.organizationId;
-
-    if (!organizationId) {
-      return "";
-    }
-
-    return (
-      <div className={css(styles.sidebar)}>
-        <AdminNavigation
-          onToggleMenu={this.handleToggleMenu}
-          showMenu={this.state.showMenu}
-          organizationId={organizationId}
-          sections={sections}
-        />
-      </div>
-    );
   }
 
   render() {
@@ -123,17 +79,19 @@ class AdminDashboard extends React.Component {
         : null;
 
     return (
-      <div>
-        <TopNav
-          title={title}
-          backToURL={backToURL}
-          orgId={params.organizationId}
-        />
-        <div className={css(styles.container)}>
-          {this.renderNavigation(sections.filter(s => hasRole(s.role, roles)))}
-          <div className={css(styles.content)}>{children}</div>
-        </div>
-      </div>
+      <ShoreShell
+        organizationId={params.organizationId}
+        currentPath={location.pathname}
+        header={
+          <TopNav
+            title={title}
+            backToURL={backToURL}
+            orgId={params.organizationId}
+          />
+        }
+      >
+        {children}
+      </ShoreShell>
     );
   }
 }

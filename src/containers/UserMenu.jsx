@@ -12,12 +12,24 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import Avatar from "@material-ui/core/Avatar";
 import IconButton from "@material-ui/core/IconButton";
 import Divider from "@material-ui/core/Divider";
+import ButtonBase from "@material-ui/core/ButtonBase";
+import { v, palette } from "../styles/shore-tokens";
+import { IconCheck } from "@tabler/icons-react";
+import { ColorSchemeContext } from "../components/ColorScheme";
+
+const APPEARANCE = [
+  { value: "auto", label: "Match device" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" }
+];
 
 import { dataTest } from "../lib/attributes";
 import loadData from "./hoc/load-data";
 import withMuiTheme from "./hoc/withSetTheme";
 
 export class UserMenuBase extends Component {
+  static contextType = ColorSchemeContext;
+
   constructor(props) {
     super(props);
     this.state = {
@@ -96,6 +108,113 @@ export class UserMenuBase extends Component {
     );
   }
 
+  // The Shore shell's sidebar footer: avatar, name and email (design guide,
+  // "Sidebar, bottom").
+  renderSidebarTrigger(user) {
+    return (
+      <ButtonBase
+        {...dataTest("userMenuButton")}
+        onClick={this.handleTouchTap}
+        focusRipple
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          width: "100%",
+          padding: 8,
+          borderRadius: 8,
+          justifyContent: "flex-start",
+          textAlign: "left"
+        }}
+      >
+        <Avatar
+          style={{
+            width: 34,
+            height: 34,
+            fontSize: 14,
+            backgroundColor: palette.navy[7],
+            color: "#FFFFFF"
+          }}
+        >
+          {user.displayName.charAt(0)}
+        </Avatar>
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span
+            style={{
+              display: "block",
+              fontWeight: 600,
+              fontSize: 14,
+              color: v("text"),
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {user.displayName}
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontSize: 12,
+              color: v("dimmed"),
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {user.email}
+          </span>
+        </span>
+      </ButtonBase>
+    );
+  }
+
+  // Light/dark mode. With Shore connected, Spoke follows the person's Shore
+  // setting (so both apps match) and it's changed in Shore.
+  renderAppearance() {
+    const { preference, followsShore, setPreference } = this.context || {};
+    const current =
+      APPEARANCE.find(a => a.value === preference) || APPEARANCE[0];
+    if (followsShore) {
+      return (
+        <div>
+          <ListSubheader>Appearance</ListSubheader>
+          <MenuItem {...dataTest("appearanceFromShore")} disabled>
+            {current.label} (set in Shore)
+          </MenuItem>
+          <Divider />
+        </div>
+      );
+    }
+    return (
+      <div>
+        <ListSubheader>Appearance</ListSubheader>
+        {APPEARANCE.map(option => (
+          <MenuItem
+            key={option.value}
+            {...dataTest(`appearance-${option.value}`)}
+            selected={option.value === current.value}
+            onClick={() => {
+              if (setPreference) {
+                setPreference(option.value);
+              }
+            }}
+          >
+            <ListItemIcon style={{ minWidth: 28 }}>
+              {option.value === current.value ? (
+                <IconCheck size={16} stroke={1.7} />
+              ) : (
+                <span />
+              )}
+            </ListItemIcon>
+            {option.label}
+          </MenuItem>
+        ))}
+        <Divider />
+      </div>
+    );
+  }
+
   renderAdminTools() {
     return (
       <div>
@@ -116,22 +235,35 @@ export class UserMenuBase extends Component {
     if (!currentUser) {
       return <div />;
     }
-    const organizations = [...currentUser.texterOrganizations]
-      .sort((a,b)=> a.name.toLowerCase()>b.name.toLowerCase() ? 1 : -1)
+    const organizations = [...currentUser.texterOrganizations].sort((a, b) =>
+      a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1
+    );
     const isSuperAdmin = currentUser.is_superadmin;
     return (
       <div>
-        <IconButton
-          {...dataTest("userMenuButton")}
-          onClick={this.handleTouchTap}
-        >
-          {this.renderAvatar(currentUser)}
-        </IconButton>
+        {this.props.variant === "sidebar" ? (
+          this.renderSidebarTrigger(currentUser)
+        ) : (
+          <IconButton
+            {...dataTest("userMenuButton")}
+            onClick={this.handleTouchTap}
+          >
+            {this.renderAvatar(currentUser)}
+          </IconButton>
+        )}
         <Popover
           open={this.state.open}
           anchorEl={this.state.anchorEl}
-          anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
-          transformOrigin={{ horizontal: "left", vertical: "top" }}
+          anchorOrigin={
+            this.props.variant === "sidebar"
+              ? { horizontal: "left", vertical: "top" }
+              : { horizontal: "left", vertical: "bottom" }
+          }
+          transformOrigin={
+            this.props.variant === "sidebar"
+              ? { horizontal: "left", vertical: "bottom" }
+              : { horizontal: "left", vertical: "top" }
+          }
           onClose={this.handleRequestClose}
         >
           <MenuList onChange={this.handleMenuChange}>
@@ -165,6 +297,7 @@ export class UserMenuBase extends Component {
               FAQs
             </MenuItem>
             <Divider />
+            {this.renderAppearance()}
             <MenuItem
               {...dataTest("userMenuLogOut")}
               onClick={event => {
@@ -183,7 +316,8 @@ export class UserMenuBase extends Component {
 UserMenuBase.propTypes = {
   data: PropTypes.object,
   orgId: PropTypes.string,
-  router: PropTypes.object
+  router: PropTypes.object,
+  variant: PropTypes.oneOf(["icon", "sidebar"])
 };
 
 const queries = {

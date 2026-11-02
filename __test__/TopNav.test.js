@@ -28,11 +28,11 @@ describe("TopNav", () => {
     expect(link.find(IconButton).length).toBe(1);
   });
 
-  it("renders UserMenu", () => {
+  it("leaves the account menu to the Shore shell's sidebar", () => {
     const nav = shallow(
       <TopNav muiTheme={muiTheme} title="Welcome to my website" />
     );
-    expect(nav.find(UserMenu).length).toBe(1);
+    expect(nav.find(UserMenu).length).toBe(0);
   });
 });
 

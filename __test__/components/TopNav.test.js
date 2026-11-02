@@ -11,10 +11,10 @@ describe("TopNav component", () => {
   const title = "foo";
   const wrapper = shallow(<TopNav orgId={orgId} title={title} />);
 
-  test("Renders UserMenu with orgId", () => {
-    const menu = wrapper.find(UserMenu);
-
-    // then
-    expect(menu.prop("orgId")).toBe("1");
+  test("leaves the account menu to the Shore shell's sidebar", () => {
+    expect(wrapper.find(UserMenu).length).toBe(0);
+    expect(wrapper.find("h1").length + wrapper.text().length).toBeGreaterThan(
+      0
+    );
   });
 });

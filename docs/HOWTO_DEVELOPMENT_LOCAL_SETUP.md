@@ -22,32 +22,26 @@ wsl --install
 **NOTE**: In the event that WSL needs _Virtualization_ enabled, please follow [these steps](https://www.geeksforgeeks.org/how-to-enable-virtualization-vt-x-in-windows-10-bios/) to enable _Virtualization_ in your bios.
 
 ---
-### [Repository](https://github.com/StateVoicesNational/Spoke)
-1. If you have not already, Fork this repo then clone your forked copy. Then future pull requests can be made from your repo to Spoke. 
+### [Repository](https://github.com/bryan-graham/Spoke)
+1. Clone the repository:
 ```
-git clone <url of your forked repo>
-```
-
-2. change your pwd (present working directory) to the spoke directory before installations 
-```
-cd spoke
+git clone https://github.com/bryan-graham/Spoke.git
 ```
 
-3. You may use this opportunity to set the remote upstream to spoke's repo for future fetches.
+2. Change your pwd (present working directory) to the Spoke directory before installations
 ```
-git remote add upstream https://github.com/StateVoicesNational/Spoke.git
-``` 
-   -  you can check that this is configured correctly to push to the origin and fetch from spoke's repo. 
-   ```
-   git remote -v
-   ```
-   Your origin and Upstream should appear configured correctly.
-   - this is a good time to take a look at [Syncing a Fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork) for full understanding.
+cd Spoke
+```
+
+3. Make changes on a branch and open pull requests against `main` in
+   [bryan-graham/Spoke](https://github.com/bryan-graham/Spoke). This repository is
+   maintained on its own: changes aren't sent back to the projects it was forked from
+   (ProgressiveCoders/Spoke and StateVoicesNational/Spoke).
 
 ---
 ### Downloading
 
-1. Install the Node version listed in `.nvmrc`. This can also be found here:[.nvmrc](https://github.com/StateVoicesNational/Spoke/blob/main/.nvmrc). 
+1. Install the Node version listed in `.nvmrc`. This can also be found here:[.nvmrc](https://github.com/bryan-graham/Spoke/blob/main/.nvmrc). 
 From the spoke directory:
    ```
    nvm install

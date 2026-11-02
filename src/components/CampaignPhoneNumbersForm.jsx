@@ -28,6 +28,7 @@ import CampaignFormSectionHeading from "../components/CampaignFormSectionHeading
 import LoadingIndicator from "./LoadingIndicator";
 import theme from "../styles/theme";
 import withMuiTheme from "../containers/hoc/withMuiTheme";
+import { v } from "../styles/shore-tokens";
 
 /* eslint-disable no-nested-ternary */
 
@@ -308,7 +309,7 @@ class CampaignPhoneNumbersForm extends React.Component {
                         key={areaCode}
                         style={{
                           marginBottom: 15,
-                          border: "1px solid rgb(225, 228, 224)",
+                          border: `1px solid ${v("border")}`,
                           borderRadius: 8
                         }}
                         disabled
@@ -851,7 +852,7 @@ class CampaignPhoneNumbersForm extends React.Component {
                             key={areaCode}
                             style={{
                               marginBottom: 15,
-                              border: "1px solid rgb(225, 228, 224)",
+                              border: `1px solid ${v("border")}`,
                               borderRadius: 8
                             }}
                           >

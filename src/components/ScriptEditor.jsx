@@ -12,10 +12,11 @@ import { delimit } from "../lib/scripts";
 import { replaceEasyGsmWins } from "../lib/gsm";
 import Chip from "./Chip";
 import { getCharCount } from "@trt2/gsm-charset-utils";
+import { v } from "../styles/shore-tokens";
 
 const styles = {
   editor: {
-    border: "1px solid #ddd",
+    border: `1px solid ${v("border")}`,
     cursor: "text",
     fontSize: 16,
     padding: 5
@@ -36,7 +37,7 @@ const styles = {
     fontSize: "11px",
     color: "#43A047",
     textTransform: "none",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: v("subtle"),
     // margin: '5px 10px',
     cursor: "pointer"
     // display: 'inline-block',

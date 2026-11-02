@@ -1,0 +1,1695 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Spoke ↔ Shore integration",
+    "version": "1.0.0",
+    "description": "Machine-readable version of docs/shore-contract.md, which explains the rules (signing, retries, ordering). Paths are relative to each operation's server. Consumers must ignore response fields they don't know: new optional fields can be added within v1."
+  },
+  "servers": [
+    {
+      "url": "{spokeBaseUrl}/integrations/shore/v1/{organizationId}",
+      "variables": {
+        "spokeBaseUrl": {
+          "default": "https://spoke.example.org"
+        },
+        "organizationId": {
+          "default": "1",
+          "description": "The Spoke organization ID."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "shoreTimestamp": [],
+      "shoreSignature": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Shore implements (Spoke calls)",
+      "description": "Served by Shore under {SHORE_URL}/api/spoke/v1/{campaign}."
+    },
+    {
+      "name": "Spoke implements (Shore calls)",
+      "description": "Served by Spoke's shore extension under /integrations/shore/v1/{organizationId}."
+    }
+  ],
+  "paths": {
+    "/segments": {
+      "get": {
+        "tags": [
+          "Shore implements (Spoke calls)"
+        ],
+        "operationId": "listSegments",
+        "summary": "List the campaign's segments for Spoke's picker",
+        "responses": {
+          "200": {
+            "description": "Segments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Bad signature. Spoke shows 'Shore rejected the request'.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{shoreUrl}/api/spoke/v1/{campaign}",
+          "variables": {
+            "shoreUrl": {
+              "default": "https://app.shore.example",
+              "description": "SHORE_URL, including any path prefix."
+            },
+            "campaign": {
+              "default": "gotv-2026",
+              "description": "SHORE_CAMPAIGN"
+            }
+          }
+        }
+      ]
+    },
+    "/segments/{segmentId}/loads": {
+      "post": {
+        "tags": [
+          "Shore implements (Spoke calls)"
+        ],
+        "operationId": "startLoad",
+        "summary": "Start a load: snapshot the segment's textable contacts",
+        "parameters": [
+          {
+            "name": "segmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLoadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Load started. Same spokeJobId → same loadId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartLoadResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown segment. Spoke reports segment_not_found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{shoreUrl}/api/spoke/v1/{campaign}",
+          "variables": {
+            "shoreUrl": {
+              "default": "https://app.shore.example",
+              "description": "SHORE_URL, including any path prefix."
+            },
+            "campaign": {
+              "default": "gotv-2026",
+              "description": "SHORE_CAMPAIGN"
+            }
+          }
+        }
+      ]
+    },
+    "/loads/{loadId}/contacts": {
+      "get": {
+        "tags": [
+          "Shore implements (Spoke calls)"
+        ],
+        "operationId": "getLoadContacts",
+        "summary": "One page of a load's snapshot",
+        "parameters": [
+          {
+            "name": "loadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Omitted on the first page."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000
+            },
+            "description": "Return at most this many contacts. Spoke asks for 1000 or fewer."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown load. Spoke reports load_expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Expired load. Spoke reports load_expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{shoreUrl}/api/spoke/v1/{campaign}",
+          "variables": {
+            "shoreUrl": {
+              "default": "https://app.shore.example",
+              "description": "SHORE_URL, including any path prefix."
+            },
+            "campaign": {
+              "default": "gotv-2026",
+              "description": "SHORE_CAMPAIGN"
+            }
+          }
+        }
+      ]
+    },
+    "/opt-outs": {
+      "post": {
+        "tags": [
+          "Spoke implements (Shore calls)"
+        ],
+        "operationId": "postOptOuts",
+        "summary": "Opt numbers out in Spoke",
+        "description": "Content-Type MUST be application/vnd.shore+json. Each number is opted out through Spoke's own STOP path. Idempotent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/vnd.shore+json": {
+              "schema": {
+                "$ref": "#/components/schemas/OptOutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All cells handled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptOutResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_json | cells_required | cells_count | invalid_reason",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "unsupported_media_type: Content-Type isn't application/vnd.shore+json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "failed > 0 (retry the whole request), or internal_error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OptOutResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/Error"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Spoke implements (Shore calls)"
+        ],
+        "operationId": "listOptOuts",
+        "summary": "Opt-outs recorded in Spoke",
+        "description": "Rows with id > afterId in this organization, ascending. Rows created less than SHORE_SETTLE_SECONDS (default 15) ago are held back, and the page stops at the first such row, so a short or empty page means 'caught up for now', not 'no more rows ever'. A full page (length == limit) means more may be ready immediately. With OPTOUTS_SHARE_ALL_ORGS set in Spoke, includes every organization's opt-outs.",
+        "parameters": [
+          {
+            "name": "afterId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2000,
+              "default": 500
+            },
+            "description": "Values above 2000 are treated as 2000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page in ascending id order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptOutsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_paging",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized: bad, stale or missing signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: unknown organization, or Shore not configured for it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{spokeBaseUrl}/integrations/shore/v1/{organizationId}",
+          "variables": {
+            "spokeBaseUrl": {
+              "default": "https://spoke.example.org"
+            },
+            "organizationId": {
+              "default": "1",
+              "description": "The Spoke organization ID."
+            }
+          }
+        }
+      ]
+    },
+    "/messages": {
+      "get": {
+        "tags": [
+          "Spoke implements (Shore calls)"
+        ],
+        "operationId": "listMessages",
+        "summary": "Messages sent and received",
+        "description": "Rows with id > afterId in this organization, ascending. Rows created less than SHORE_SETTLE_SECONDS (default 15) ago are held back, and the page stops at the first such row, so a short or empty page means 'caught up for now', not 'no more rows ever'. A full page (length == limit) means more may be ready immediately.",
+        "parameters": [
+          {
+            "name": "afterId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2000,
+              "default": 500
+            },
+            "description": "Values above 2000 are treated as 2000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page in ascending id order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagesPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_paging",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized: bad, stale or missing signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: unknown organization, or Shore not configured for it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{spokeBaseUrl}/integrations/shore/v1/{organizationId}",
+          "variables": {
+            "spokeBaseUrl": {
+              "default": "https://spoke.example.org"
+            },
+            "organizationId": {
+              "default": "1",
+              "description": "The Spoke organization ID."
+            }
+          }
+        }
+      ]
+    },
+    "/question-responses": {
+      "get": {
+        "tags": [
+          "Spoke implements (Shore calls)"
+        ],
+        "operationId": "listQuestionResponses",
+        "summary": "Survey answers",
+        "description": "Rows with id > afterId in this organization, ascending. Rows created less than SHORE_SETTLE_SECONDS (default 15) ago are held back, and the page stops at the first such row, so a short or empty page means 'caught up for now', not 'no more rows ever'. A full page (length == limit) means more may be ready immediately. A changed answer appears as a new row; a cleared answer doesn't appear (see contact-state).",
+        "parameters": [
+          {
+            "name": "afterId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2000,
+              "default": 500
+            },
+            "description": "Values above 2000 are treated as 2000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page in ascending id order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionResponsesPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_paging",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized: bad, stale or missing signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: unknown organization, or Shore not configured for it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{spokeBaseUrl}/integrations/shore/v1/{organizationId}",
+          "variables": {
+            "spokeBaseUrl": {
+              "default": "https://spoke.example.org"
+            },
+            "organizationId": {
+              "default": "1",
+              "description": "The Spoke organization ID."
+            }
+          }
+        }
+      ]
+    },
+    "/tags": {
+      "get": {
+        "tags": [
+          "Spoke implements (Shore calls)"
+        ],
+        "operationId": "listTags",
+        "summary": "Tags applied to contacts",
+        "description": "Rows with id > afterId in this organization, ascending. Rows created less than SHORE_SETTLE_SECONDS (default 15) ago are held back, and the page stops at the first such row, so a short or empty page means 'caught up for now', not 'no more rows ever'. A full page (length == limit) means more may be ready immediately. Removed tags don't appear (see contact-state).",
+        "parameters": [
+          {
+            "name": "afterId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2000,
+              "default": 500
+            },
+            "description": "Values above 2000 are treated as 2000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page in ascending id order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_paging",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized: bad, stale or missing signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: unknown organization, or Shore not configured for it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{spokeBaseUrl}/integrations/shore/v1/{organizationId}",
+          "variables": {
+            "spokeBaseUrl": {
+              "default": "https://spoke.example.org"
+            },
+            "organizationId": {
+              "default": "1",
+              "description": "The Spoke organization ID."
+            }
+          }
+        }
+      ]
+    },
+    "/campaigns": {
+      "get": {
+        "tags": [
+          "Spoke implements (Shore calls)"
+        ],
+        "operationId": "listCampaigns",
+        "summary": "Campaigns with their survey questions",
+        "description": "Ascending by id; no settle window. Campaigns change in place, so re-read the whole list each poll.",
+        "parameters": [
+          {
+            "name": "afterId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2000,
+              "default": 500
+            },
+            "description": "Values above 2000 are treated as 2000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_paging",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{spokeBaseUrl}/integrations/shore/v1/{organizationId}",
+          "variables": {
+            "spokeBaseUrl": {
+              "default": "https://spoke.example.org"
+            },
+            "organizationId": {
+              "default": "1",
+              "description": "The Spoke organization ID."
+            }
+          }
+        }
+      ]
+    },
+    "/campaigns/{campaignId}/contact-state": {
+      "get": {
+        "tags": [
+          "Spoke implements (Shore calls)"
+        ],
+        "operationId": "listContactState",
+        "summary": "Current answers, tags and opt-out state per contact",
+        "description": "Authoritative current state, for reconciling what the append-only feeds can't show (cleared answers, removed tags). No settle window.",
+        "parameters": [
+          {
+            "name": "campaignId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "afterContactId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2000,
+              "default": 500
+            },
+            "description": "Values above 2000 are treated as 2000."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactStatePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_paging | invalid_campaign",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found, or campaign_not_found (campaign isn't in this organization)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "{spokeBaseUrl}/integrations/shore/v1/{organizationId}",
+          "variables": {
+            "spokeBaseUrl": {
+              "default": "https://spoke.example.org"
+            },
+            "organizationId": {
+              "default": "1",
+              "description": "The Spoke organization ID."
+            }
+          }
+        }
+      ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Short machine-readable code."
+          }
+        }
+      },
+      "Segment": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Opaque, URL-safe segment ID.",
+            "maxLength": 128
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "textableCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "How many contacts a load would return right now."
+          }
+        }
+      },
+      "SegmentList": {
+        "type": "object",
+        "required": [
+          "segments"
+        ],
+        "properties": {
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            }
+          }
+        }
+      },
+      "StartLoadRequest": {
+        "type": "object",
+        "required": [
+          "spokeCampaignId",
+          "spokeCampaignTitle",
+          "spokeJobId"
+        ],
+        "properties": {
+          "spokeCampaignId": {
+            "type": "integer"
+          },
+          "spokeCampaignTitle": {
+            "type": "string"
+          },
+          "spokeJobId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Idempotency key, unique per Spoke instance. Null only if Spoke had no job ID."
+          }
+        }
+      },
+      "StartLoadResponse": {
+        "type": "object",
+        "required": [
+          "loadId"
+        ],
+        "properties": {
+          "loadId": {
+            "type": "string",
+            "description": "Opaque, URL-safe load ID.",
+            "maxLength": 128
+          },
+          "count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Contacts in the snapshot. Informational; Spoke doesn't depend on it."
+          }
+        }
+      },
+      "CustomFields": {
+        "type": "object",
+        "description": "Every contact in a load carries the same keys; use \"\" for unknown values. Values are strings (numbers and booleans are converted; null becomes \"\").",
+        "required": [
+          "preferredName",
+          "city",
+          "pollingPlaceName",
+          "pollingPlaceAddress",
+          "precinct"
+        ],
+        "properties": {
+          "preferredName": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "pollingPlaceName": {
+            "type": "string"
+          },
+          "pollingPlaceAddress": {
+            "type": "string"
+          },
+          "precinct": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "LoadContact": {
+        "type": "object",
+        "required": [
+          "externalId",
+          "firstName",
+          "lastName",
+          "cell",
+          "zip",
+          "customFields"
+        ],
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "description": "Shore's person ID. Returned unchanged in Spoke's read feeds."
+          },
+          "firstName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cell": {
+            "type": "string",
+            "description": "E.164, e.g. +15555550123.",
+            "pattern": "^\\+[1-9][0-9]{6,14}$"
+          },
+          "zip": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]{5}$"
+          },
+          "customFields": {
+            "$ref": "#/components/schemas/CustomFields"
+          }
+        }
+      },
+      "ContactPage": {
+        "type": "object",
+        "required": [
+          "contacts",
+          "nextCursor"
+        ],
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoadContact"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque; null on the last page."
+          }
+        }
+      },
+      "OptOutRequest": {
+        "type": "object",
+        "required": [
+          "cells"
+        ],
+        "properties": {
+          "cells": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 500,
+            "items": {
+              "type": "string",
+              "maxLength": 32
+            }
+          },
+          "reason": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:-]{1,64}$",
+            "description": "Stored as reason_code \"shore:<reason>\". Default \"optout\"."
+          },
+          "shoreRequestId": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "For logs only."
+          }
+        }
+      },
+      "OptOutResponse": {
+        "type": "object",
+        "required": [
+          "optedOut",
+          "alreadyOptedOut",
+          "invalid",
+          "failed"
+        ],
+        "properties": {
+          "optedOut": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "alreadyOptedOut": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "required": [
+          "id",
+          "campaignId",
+          "campaignContactId",
+          "externalId",
+          "contactNumber",
+          "isFromContact",
+          "text",
+          "sendStatus",
+          "userId",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "campaignId": {
+            "type": "integer"
+          },
+          "campaignContactId": {
+            "type": "integer"
+          },
+          "externalId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The contact's external_id: Shore's person ID when Shore loaded the contact."
+          },
+          "contactNumber": {
+            "type": "string"
+          },
+          "isFromContact": {
+            "type": "boolean",
+            "description": "true = inbound (the contact wrote it); false = sent by a texter."
+          },
+          "text": {
+            "type": "string"
+          },
+          "sendStatus": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "SENDING",
+              "SENT",
+              "DELIVERED",
+              "ERROR",
+              "PAUSED",
+              "NOT_ATTEMPTED"
+            ],
+            "description": "Status when read. Can change after the row is first returned."
+          },
+          "userId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Spoke user (texter) who sent it; null for inbound."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MessagesPage": {
+        "type": "object",
+        "required": [
+          "messages",
+          "nextAfterId"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "nextAfterId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pass back as the next request's cursor. Equals the request's cursor when the page is empty."
+          }
+        }
+      },
+      "QuestionResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "campaignId",
+          "campaignContactId",
+          "externalId",
+          "interactionStepId",
+          "value",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "campaignId": {
+            "type": "integer"
+          },
+          "campaignContactId": {
+            "type": "integer"
+          },
+          "externalId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interactionStepId": {
+            "type": "integer",
+            "description": "The step whose question was answered."
+          },
+          "value": {
+            "type": "string",
+            "description": "The chosen answer: the answerOption of one of that step's child steps."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "QuestionResponsesPage": {
+        "type": "object",
+        "required": [
+          "questionResponses",
+          "nextAfterId"
+        ],
+        "properties": {
+          "questionResponses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionResponse"
+            }
+          },
+          "nextAfterId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pass back as the next request's cursor. Equals the request's cursor when the page is empty."
+          }
+        }
+      },
+      "ContactTag": {
+        "type": "object",
+        "required": [
+          "id",
+          "campaignId",
+          "campaignContactId",
+          "externalId",
+          "tagId",
+          "tagName",
+          "value",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "campaignId": {
+            "type": "integer"
+          },
+          "campaignContactId": {
+            "type": "integer"
+          },
+          "externalId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tagId": {
+            "type": "integer"
+          },
+          "tagName": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TagsPage": {
+        "type": "object",
+        "required": [
+          "tags",
+          "nextAfterId"
+        ],
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContactTag"
+            }
+          },
+          "nextAfterId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pass back as the next request's cursor. Equals the request's cursor when the page is empty."
+          }
+        }
+      },
+      "SpokeOptOut": {
+        "type": "object",
+        "required": [
+          "id",
+          "cell",
+          "reasonCode",
+          "assignmentId",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "cell": {
+            "type": "string",
+            "description": "E.164."
+          },
+          "reasonCode": {
+            "type": "string",
+            "description": "Free text from Spoke; starts with \"shore:\" when Shore sent it."
+          },
+          "assignmentId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OptOutsPage": {
+        "type": "object",
+        "required": [
+          "optOuts",
+          "nextAfterId"
+        ],
+        "properties": {
+          "optOuts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpokeOptOut"
+            }
+          },
+          "nextAfterId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pass back as the next request's cursor. Equals the request's cursor when the page is empty."
+          }
+        }
+      },
+      "InteractionStep": {
+        "type": "object",
+        "required": [
+          "id",
+          "parentInteractionId",
+          "answerOption",
+          "question",
+          "isDeleted"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "parentInteractionId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "null for the campaign's first step."
+          },
+          "answerOption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The answer (to the parent step's question) that leads to this step."
+          },
+          "question": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "This step's question; empty when the step asks nothing."
+          },
+          "isDeleted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ShoreLoad": {
+        "type": "object",
+        "required": [
+          "segmentId",
+          "segmentName",
+          "loadId"
+        ],
+        "properties": {
+          "segmentId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "segmentName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "loadId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "Campaign": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "isStarted",
+          "isArchived",
+          "createdAt",
+          "shoreLoad",
+          "interactionSteps"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "isStarted": {
+            "type": "boolean"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "shoreLoad": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ShoreLoad"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The campaign's last successful Shore load, or null."
+          },
+          "interactionSteps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InteractionStep"
+            }
+          }
+        }
+      },
+      "CampaignsPage": {
+        "type": "object",
+        "required": [
+          "campaigns",
+          "nextAfterId"
+        ],
+        "properties": {
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Campaign"
+            }
+          },
+          "nextAfterId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pass back as the next request's cursor. Equals the request's cursor when the page is empty."
+          }
+        }
+      },
+      "ContactState": {
+        "type": "object",
+        "required": [
+          "campaignContactId",
+          "externalId",
+          "messageStatus",
+          "isOptedOut",
+          "questionResponses",
+          "tags"
+        ],
+        "properties": {
+          "campaignContactId": {
+            "type": "integer"
+          },
+          "externalId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "messageStatus": {
+            "type": "string",
+            "description": "Spoke's message_status: needsMessage, needsResponse, convo, messaged, closed, or (briefly) UPDATING."
+          },
+          "isOptedOut": {
+            "type": "boolean"
+          },
+          "questionResponses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "interactionStepId",
+                "value"
+              ],
+              "properties": {
+                "interactionStepId": {
+                  "type": "integer"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tagId",
+                "tagName",
+                "value"
+              ],
+              "properties": {
+                "tagId": {
+                  "type": "integer"
+                },
+                "tagName": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "ContactStatePage": {
+        "type": "object",
+        "required": [
+          "contacts",
+          "nextAfterContactId"
+        ],
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContactState"
+            }
+          },
+          "nextAfterContactId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pass back as the next request's cursor. Equals the request's cursor when the page is empty."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "shoreTimestamp": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Shore-Timestamp",
+        "description": "Unix seconds. Rejected if more than 300 seconds from the receiver's clock."
+      },
+      "shoreSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Shore-Signature",
+        "description": "Lowercase hex HMAC-SHA256, keyed with SHORE_INTEGRATION_KEY, of `${timestamp}.${METHOD}.${pathWithQuery}.${rawBody}`. See docs/shore-contract.md."
+      }
+    }
+  }
+}

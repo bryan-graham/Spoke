@@ -1,4 +1,5 @@
-const defaultFont = "Poppins";
+const defaultFont =
+  '"Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
 
 const text = {
   body: {

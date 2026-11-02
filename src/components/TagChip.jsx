@@ -4,6 +4,7 @@ import type from "prop-types";
 import Avatar from "@material-ui/core/Avatar";
 import FlagIcon from "@material-ui/icons/Flag";
 import withMuiTheme from "../containers/hoc/withMuiTheme";
+import { v } from "../styles/shore-tokens";
 
 export const TagChip = props => {
   const inlineStyles = {
@@ -20,7 +21,7 @@ export const TagChip = props => {
     text: {
       fontSize: "12px",
       fontWeight: "900",
-      color: "#111",
+      color: v("text"),
       maxWidth: 200,
       whiteSpace: "nowrap",
       overflow: "hidden",
