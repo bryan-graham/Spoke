@@ -1,4 +1,5 @@
 import { hasConfig, getConfig } from "../api/lib/config";
+import { shoreBranding } from "../../extensions/contact-loaders/shore/lib/branding";
 import { getProcessEnvTz, getProcessEnvDstReferenceTimezone } from "../../lib";
 import { base64ToString } from "../api/lib/utils";
 
@@ -50,7 +51,23 @@ const rollbarScript = process.env.ROLLBAR_CLIENT_TOKEN
 // (src/client/index.jsx), so no external stylesheet is needed.
 const externalLinks = "";
 
+const SPOKE_FAVICON =
+  '<link rel="icon" href="https://s3-us-west-1.amazonaws.com/spoke-public/spoke_logo.svg">';
+
+// Shore's favicon when this Spoke is set up for Shore and the file is there
+// (src/extensions/contact-loaders/shore/assets/); Spoke's otherwise.
+function faviconLinks(branding) {
+  if (!branding || !branding.favicon) {
+    return SPOKE_FAVICON;
+  }
+  const touch = branding.appleTouchIcon
+    ? `\n    <link rel="apple-touch-icon" href="${branding.appleTouchIcon}">`
+    : "";
+  return `<link rel="icon" type="${branding.faviconType}" href="${branding.favicon}">${touch}`;
+}
+
 export default function renderIndex(html, css, assetMap) {
+  const branding = shoreBranding();
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -97,7 +114,7 @@ export default function renderIndex(html, css, assetMap) {
     </style>
     <style data-aphrodite>${css.content}</style>
     ${rollbarScript}
-    <link rel="icon" href="https://s3-us-west-1.amazonaws.com/spoke-public/spoke_logo.svg">
+    ${faviconLinks(branding)}
   </head>
   <body>
     <div id="mount">${html}</div>
@@ -109,6 +126,7 @@ export default function renderIndex(html, css, assetMap) {
         truthy: true
       })}
       window.NODE_ENV="${process.env.NODE_ENV}"
+      window.SHORE_LOGO_URL=${JSON.stringify((branding && branding.logo) || "")}
       window.PRIVACY_URL="${process.env.PRIVACY_URL || ""}"
       window.BASE_URL="${process.env.BASE_URL || ""}"
       window.NOT_IN_USA=${process.env.NOT_IN_USA || 0}

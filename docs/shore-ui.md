@@ -81,12 +81,21 @@ Spoke email matches an active member of the campaign in Shore.
 organization (or superadmin). It answers `no-store`, and passes on only the documented
 fields, with links limited to `http`/`https`.
 
+## Shore's favicon and wordmark
+
+Put Shore's brand files in `src/extensions/contact-loaders/shore/assets/` (its README lists
+them): `favicon.svg`/`.png`/`.ico`, `apple-touch-icon.png`, and `shore-logo.svg`.
+
+When this Spoke is set up for Shore (`shore` in `CONTACT_LOADERS` and `SHORE_URL` set), the
+page uses Shore's favicon and the sidebar's "powered by" mark uses `shore-logo.svg`, drawn in
+the scheme's faint colour. Otherwise Spoke keeps its own favicon. Each file falls back on its
+own when missing (the mark falls back to the word "Shore"). They're served at
+`/shore-assets/<name>`.
+
 ## Known gaps and next steps
 
-- **Shore wordmark.** The sidebar shows the word "Shore" in DM Sans as a placeholder.
-  Replace `src/components/ShoreShell/ShoreWordmark.jsx` with the SVG from Shore's
-  `Logo.tsx`.
-- **App icons and sign-in page.** The favicon and the login page are still Spoke's.
+- **Brand files.** Add Shore's favicon, touch icon and wordmark to the assets folder above.
+- **Sign-in page.** The login page is still Spoke's (Shore's has the beach background).
 - **Dark mode review.** Every page restyles through the theme and the converted colours,
   but not every page has been looked at in dark mode in a real browser; expect a few spots
   to tune (charts use fixed colours).
