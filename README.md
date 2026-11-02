@@ -12,7 +12,52 @@ The latest version can be found here: [Release Notes](https://github.com/StateVo
 
 ## Notes on this Fork
 
-(Fill in here)
+This is a standalone fork of [ProgressiveCoders/Spoke](https://github.com/ProgressiveCoders/Spoke).
+Changes are made here and aren't sent back to the projects it came from.
+
+### A new look
+
+Spoke's interface has been redesigned to match [Shore](https://shore.vote), so the two feel
+like one product:
+
+- **Layout:** a sidebar for navigation, with each page on a raised panel beside it. On phones
+  the sidebar slides in from a menu button. The texting screens stay full screen so texters
+  can focus.
+- **Style:** Shore's colours, the Inter and DM Sans fonts, rounded cards and tables, and
+  Tabler icons.
+- **Dark mode:** each person can choose light, dark, or match their device from the account
+  menu at the bottom of the sidebar. When Spoke is connected to Shore, it follows the
+  person's Shore setting instead.
+- **Navigation:** texters see their assignments; admins also see Campaigns, People, Message
+  Review and Spoke's other admin pages, depending on their role.
+
+None of this needs setting up. Organizations that chose custom colours in Settings keep them
+for buttons and highlights.
+
+### Shore integration
+
+Spoke can work with Shore, a campaign organizing app, or entirely on its own. When connected:
+
+- **Contact lists:** campaign admins can load a Shore segment as a campaign's contacts. Shore
+  sends only people it's allowed to text.
+- **Opt-outs:** opt-outs Shore receives by email, phone or forms reach Spoke within seconds,
+  and opt-outs recorded in Spoke reach Shore.
+- **Conversations:** Shore can read messages, survey answers and tags from Spoke, so they
+  appear on each person's record in Shore.
+- **One menu:** Spoke's sidebar shows Shore's menu, with Spoke's pages under Texting, so
+  people can move between the two apps.
+- **Sign-in:** people can sign in to Spoke through Shore.
+
+Without Shore, Spoke works as before, with its own pages in the sidebar.
+
+To connect, see [How to integrate with Shore](docs/HOWTO-integrate-with-shore.md). More
+detail:
+
+- [Spoke's Shore interface](docs/shore-ui.md): what changed in the interface and how to set
+  up Shore's menu, colour scheme and logos.
+- [Shore integration contract](docs/shore-contract.md): the exact interface between the two
+  apps, for developers.
+- [Building Shore's side](docs/shore-implementation-guide.md): for the team working on Shore.
 
 ## Setting up Spoke
 
