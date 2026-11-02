@@ -103,6 +103,12 @@ Each contact comes with custom fields scripts can use:
 fields in campaigns whose segments Shore fills them for; otherwise the message will have a
 blank where the field goes.
 
+## 5. Show Shore's menu in Spoke (optional)
+
+Spoke can show Shore's sidebar menu, so people move between Shore and Spoke from one menu.
+It also needs `TOKEN_AUTH_SHARED_SECRET`, the secret Shore signs Spoke sign-ins with. See
+[shore-ui.md](shore-ui.md#setting-up-the-shared-menu).
+
 ## Troubleshooting
 
 | What you see | What to check |

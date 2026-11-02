@@ -38,6 +38,8 @@
   - [How to integrate with Shore](HOWTO-integrate-with-shore.md)
   - [Shore integration contract](shore-contract.md)
   - [Building Shore's side](shore-implementation-guide.md)
+  - [Spoke's Shore interface](shore-ui.md)
+  - [Shore design guide](shore-design-guide.md)
   - [Running Jobs in Production](PROD_RUNNING_JOBS.md)
   - [How to run a minimal deployment(not recommended)](HOWTO_MINIMALIST_DEPLOY.md)
 

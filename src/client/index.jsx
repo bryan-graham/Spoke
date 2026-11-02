@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Router, browserHistory } from "react-router";
 import { StyleSheet } from "aphrodite";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/dm-sans";
 import errorCatcher from "./error-catcher";
 import makeRoutes from "../routes";
 import { ApolloProvider } from "@apollo/client";

@@ -9,19 +9,18 @@ const googleClientEmail = () => {
   if (canGoogleImport) {
     try {
       const s_GOOGLE_SECRET = base64ToString(process.env.BASE64_GOOGLE_SECRET);
-      output = (JSON.parse((
-        s_GOOGLE_SECRET
-        .replace(/(\r\n|\n|\r)/gm, ""))) // new lines gum up parsing
-        .client_email)
-	      .replaceAll(" ", "");
+      output = JSON.parse(s_GOOGLE_SECRET.replace(/(\r\n|\n|\r)/gm, "")) // new lines gum up parsing
+        .client_email.replaceAll(" ", "");
     } catch (err) {
-      console.error(`
+      console.error(
+        `
         Google API failed to load client email.
         Please check your BASE64_GOOGLE_SECRET environment variable is intact: `,
-        err);
-    } 
+        err
+      );
+    }
   }
-  return (output || "");
+  return output || "";
 };
 
 const rollbarScript = process.env.ROLLBAR_CLIENT_TOKEN
@@ -47,11 +46,9 @@ const rollbarScript = process.env.ROLLBAR_CLIENT_TOKEN
   </script>`
   : "";
 
-// the site is not very useful without auth0, unless you have a session cookie already
-// good for doing dev offline
-const externalLinks = process.env.NO_EXTERNAL_LINKS
-  ? ""
-  : '<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Poppins">';
+// Fonts (Inter and DM Sans) are self-hosted in the client bundle
+// (src/client/index.jsx), so no external stylesheet is needed.
+const externalLinks = "";
 
 export default function renderIndex(html, css, assetMap) {
   return `
@@ -65,7 +62,9 @@ export default function renderIndex(html, css, assetMap) {
     <style>
       /* CSS declarations go here */
       body {
-        font-family: 'Poppins';
+        font-family: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+        background-color: #F3F4F8;
+        color: #181818;
         position: absolute;
         top: 0;
         bottom: 0;

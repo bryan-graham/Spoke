@@ -12,6 +12,8 @@ import ListItemIcon from "@material-ui/core/ListItemIcon";
 import Avatar from "@material-ui/core/Avatar";
 import IconButton from "@material-ui/core/IconButton";
 import Divider from "@material-ui/core/Divider";
+import ButtonBase from "@material-ui/core/ButtonBase";
+import { tokens, palette } from "../styles/shore-tokens";
 
 import { dataTest } from "../lib/attributes";
 import loadData from "./hoc/load-data";
@@ -96,6 +98,67 @@ export class UserMenuBase extends Component {
     );
   }
 
+  // The Shore shell's sidebar footer: avatar, name and email (design guide,
+  // "Sidebar, bottom").
+  renderSidebarTrigger(user) {
+    return (
+      <ButtonBase
+        {...dataTest("userMenuButton")}
+        onClick={this.handleTouchTap}
+        focusRipple
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          width: "100%",
+          padding: 8,
+          borderRadius: 8,
+          justifyContent: "flex-start",
+          textAlign: "left"
+        }}
+      >
+        <Avatar
+          style={{
+            width: 34,
+            height: 34,
+            fontSize: 14,
+            backgroundColor: palette.navy[7],
+            color: "#FFFFFF"
+          }}
+        >
+          {user.displayName.charAt(0)}
+        </Avatar>
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span
+            style={{
+              display: "block",
+              fontWeight: 600,
+              fontSize: 14,
+              color: tokens.text,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {user.displayName}
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontSize: 12,
+              color: tokens.dimmed,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {user.email}
+          </span>
+        </span>
+      </ButtonBase>
+    );
+  }
+
   renderAdminTools() {
     return (
       <div>
@@ -116,22 +179,35 @@ export class UserMenuBase extends Component {
     if (!currentUser) {
       return <div />;
     }
-    const organizations = [...currentUser.texterOrganizations]
-      .sort((a,b)=> a.name.toLowerCase()>b.name.toLowerCase() ? 1 : -1)
+    const organizations = [...currentUser.texterOrganizations].sort((a, b) =>
+      a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1
+    );
     const isSuperAdmin = currentUser.is_superadmin;
     return (
       <div>
-        <IconButton
-          {...dataTest("userMenuButton")}
-          onClick={this.handleTouchTap}
-        >
-          {this.renderAvatar(currentUser)}
-        </IconButton>
+        {this.props.variant === "sidebar" ? (
+          this.renderSidebarTrigger(currentUser)
+        ) : (
+          <IconButton
+            {...dataTest("userMenuButton")}
+            onClick={this.handleTouchTap}
+          >
+            {this.renderAvatar(currentUser)}
+          </IconButton>
+        )}
         <Popover
           open={this.state.open}
           anchorEl={this.state.anchorEl}
-          anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
-          transformOrigin={{ horizontal: "left", vertical: "top" }}
+          anchorOrigin={
+            this.props.variant === "sidebar"
+              ? { horizontal: "left", vertical: "top" }
+              : { horizontal: "left", vertical: "bottom" }
+          }
+          transformOrigin={
+            this.props.variant === "sidebar"
+              ? { horizontal: "left", vertical: "bottom" }
+              : { horizontal: "left", vertical: "top" }
+          }
           onClose={this.handleRequestClose}
         >
           <MenuList onChange={this.handleMenuChange}>
@@ -183,7 +259,8 @@ export class UserMenuBase extends Component {
 UserMenuBase.propTypes = {
   data: PropTypes.object,
   orgId: PropTypes.string,
-  router: PropTypes.object
+  router: PropTypes.object,
+  variant: PropTypes.oneOf(["icon", "sidebar"])
 };
 
 const queries = {

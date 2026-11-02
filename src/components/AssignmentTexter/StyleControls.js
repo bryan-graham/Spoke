@@ -70,7 +70,7 @@ export const flexStyles = StyleSheet.create({
     //messages can be scrolled through and height/width is responsive
     height: "100%",
     "@media(max-width: 420px)": {
-      fontFamily: "Poppins"
+      fontFamily: '"Inter Variable", Inter, sans-serif'
     }
   },
   popoverSideboxesInner: {
