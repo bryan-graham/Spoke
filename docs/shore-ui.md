@@ -70,7 +70,9 @@ fields, with links limited to `http`/`https`.
   `Logo.tsx`.
 - **App icons and sign-in page.** The favicon and the login page are still Spoke's.
 - **Dark mode.** Not yet: many pages hard-code light colours. The tokens and shell are ready
-  for a dark set.
+  for a dark set. Shore's menu now sends the person's `user.colorScheme` (`auto`, `light` or
+  `dark`, shared across Shore's apps); Spoke's server passes it through to the sidebar, but
+  Spoke shows light until dark mode is built.
 - **Page patterns.** Pages restyle through the theme, but keep their own layouts. Next
   candidates for Shore's page header, cards, tables and empty states: Campaigns, Message
   Review, and the texter's assignment list.

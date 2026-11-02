@@ -26,7 +26,12 @@ const MENU = {
     name: "Graham for Providence",
     logo: { light: "https://shore.test/logo" }
   },
-  user: { name: "Pat Example", email: "pat@example.com", role: "staff" },
+  user: {
+    name: "Pat Example",
+    email: "pat@example.com",
+    role: "staff",
+    colorScheme: "dark"
+  },
   counts: { message: 2 },
   groups: [
     {
@@ -73,7 +78,12 @@ describe("cleanMenu", () => {
   it("keeps the documented fields and drops the rest", () => {
     expect(cleanMenu(MENU)).toEqual({
       org: { slug: "gotv", name: "Graham for Providence" },
-      user: { name: "Pat Example", email: "pat@example.com", role: "staff" },
+      user: {
+        name: "Pat Example",
+        email: "pat@example.com",
+        role: "staff",
+        colorScheme: "dark"
+      },
       groups: [
         {
           label: null,
@@ -121,6 +131,19 @@ describe("cleanMenu", () => {
     expect(menu.groups[0].items).toEqual([
       { key: "ok", label: "OK", icon: null, url: "https://shore.test/ok" }
     ]);
+  });
+
+  it("passes colorScheme only when it's auto, light or dark", () => {
+    const scheme = value =>
+      cleanMenu({ user: { colorScheme: value }, groups: [] }).user.colorScheme;
+    expect(["auto", "light", "dark"].map(scheme)).toEqual([
+      "auto",
+      "light",
+      "dark"
+    ]);
+    expect(scheme(undefined)).toBeNull();
+    expect(scheme("purple")).toBeNull();
+    expect(scheme({ evil: 1 })).toBeNull();
   });
 
   it("rejects something that isn't a menu", () => {

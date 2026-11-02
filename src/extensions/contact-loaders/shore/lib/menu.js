@@ -41,6 +41,10 @@ const httpUrl = value => {
 
 const ICON_NAME = /^[a-z0-9-]{1,64}$/;
 
+// The person's colour scheme in Shore, shared across apps. null when Shore
+// doesn't send one (or sends something else).
+export const COLOR_SCHEMES = ["auto", "light", "dark"];
+
 function cleanItem(item) {
   if (!item || typeof item !== "object") {
     return null;
@@ -84,7 +88,10 @@ export function cleanMenu(raw) {
     user: {
       name: str(user.name, 120),
       email: str(user.email, 254),
-      role: str(user.role, 32)
+      role: str(user.role, 32),
+      colorScheme: COLOR_SCHEMES.includes(user.colorScheme)
+        ? user.colorScheme
+        : null
     },
     groups: raw.groups.slice(0, 20).map(group => ({
       label: group && str(group.label, 60),

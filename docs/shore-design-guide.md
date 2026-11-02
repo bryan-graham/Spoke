@@ -122,7 +122,8 @@ Shore's own sidebar draws from this, and another app signed in through Shore sho
 {
   "org": { "slug": "graham-for-providence", "name": "Graham for Providence",
            "logo": { "light": "https://app.shore.vote/api/orgs/…/logo/light?v=…" } },
-  "user": { "name": "Pat Example", "email": "pat@example.com", "role": "staff" },
+  "user": { "name": "Pat Example", "email": "pat@example.com", "role": "staff",
+            "colorScheme": "auto" },
   "counts": { "message": 2, "volunteer": 1, "yard_sign": 0, "review": 3 },
   "groups": [
     { "label": null, "items": [
