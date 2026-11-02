@@ -1,5 +1,36 @@
 # Release Notes
 
+## 15.0.0 (bryan-graham/Spoke)
+
+_November 2026_: Version 15.0.0
+
+15.0.0 is the first release of the standalone [bryan-graham/Spoke](https://github.com/bryan-graham/Spoke)
+fork, based on Spoke 14.1.2. Releases from here on are this fork's own; they aren't
+releases of the original Spoke project.
+
+### New features
+
+- [#4](https://github.com/bryan-graham/Spoke/pull/4) - New interface matching Shore: sidebar
+  and page panel layout, Shore's colours and fonts, and dark mode (each person chooses, or
+  it follows their Shore setting when connected). See [shore-ui.md](shore-ui.md).
+- [#2](https://github.com/bryan-graham/Spoke/pull/2) - Shore integration: load Shore segments
+  as contact lists, opt-outs in both directions, Shore reads messages, survey answers and
+  tags, and Shore's shared menu in Spoke's sidebar. See
+  [HOWTO-integrate-with-shore.md](HOWTO-integrate-with-shore.md).
+- [#3](https://github.com/bryan-graham/Spoke/pull/3) - Windows 10 (WSL) local setup guide.
+
+### Bug fixes
+
+- [#4](https://github.com/bryan-graham/Spoke/pull/4) - Organizations without saved colours
+  no longer get Spoke's old default palette from the server.
+
+### Upgrading from 14.1.2
+
+- New dependencies: `@tabler/icons-react`, `@fontsource-variable/inter` and
+  `@fontsource-variable/dm-sans` (run `yarn install`).
+- No database migrations.
+- The Shore integration is off unless configured.
+
 ## 14.1.2
 
 _October 2024_: Version 14.1.2

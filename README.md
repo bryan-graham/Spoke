@@ -8,7 +8,7 @@ Spoke was created by Saikat Chakrabarti and Sheena Pakanati.
 
 On November 19th, 2023, the repo Spoke was transferred from MoveOn to [State Voices](https://github.com/StateVoicesNational/Dispatch) and kind of renamed to "Dispatch". There haven't been any updates to the repo since about October 2024.
 
-The latest version can be found here: [Release Notes](https://github.com/StateVoicesNational/Spoke/blob/main/docs/RELEASE_NOTES.md)
+This fork's current version is **15.0.0** (based on Spoke 14.1.2): see the [Release Notes](docs/RELEASE_NOTES.md).
 
 ## Notes on this Fork
 
@@ -65,21 +65,27 @@ The easiest way to get started is with Heroku. You can also learn about Spoke th
 
 For developers, please see our recommendations for [deploying locally for development](docs/HOWTO_DEVELOPMENT_LOCAL_SETUP.md).
 
-Want to know more?
-[Click here to visit the Spoke Documentation microsite!](https://statevoicesnational.github.io/Spoke/)
+Want to know more? This fork's documentation is in the [docs folder](docs/). The original
+project's [documentation microsite](https://statevoicesnational.github.io/Spoke/) covers the
+rest of Spoke, but not this fork's changes.
 
 ### Quick Start with Heroku
 
-This version of Spoke suitable for testing and, potentially, for small campaigns. This won't cost any money and will not support production(aka large-scale) usage. It's a great way to practice deploying Spoke or see it in action.
+This button deploys **this fork** ([bryan-graham/Spoke](https://github.com/bryan-graham/Spoke),
+version 15.0.0, with the new interface and Shore support), not the original Spoke project.
+It's suitable for testing and, potentially, for small campaigns. It uses Heroku's smallest
+paid plans (a few dollars a month) and won't support production (large-scale) use.
 
-<a href="https://heroku.com/deploy?template=https://github.com/StateVoicesNational/Spoke/tree/v14.1.2">
-
-  <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy">
+<a href="https://heroku.com/deploy?template=https://github.com/bryan-graham/Spoke/tree/v15.0.0">
+  <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy this fork to Heroku">
 </a>
 
-Follow up instructions located [here](docs/HOWTO_HEROKU_DEPLOY.md).
+Follow-up instructions are [here](docs/HOWTO_HEROKU_DEPLOY.md). To connect the deployment to
+Shore, see [How to integrate with Shore](docs/HOWTO-integrate-with-shore.md).
 
-**NOTE:** You can upgrade this deployment later for use in a production setting, but keep in mind you will need to migrate data from any prior campaigns. Thus it is best to upgrade before you start any live campaigns. This will cost ~$75 ($25 dyno + \$50 postgres) a month and should be suitable for production level usage for most organizations. We recommend that if you plan to use Spoke at scale that you use [this link to deploy with a production infrastructure from the start!](https://heroku.com/deploy?template=https://github.com/StateVoicesNational/Spoke/tree/heroku-button-paid)
+**NOTE:** For production use, upgrade the app's dyno and Postgres plans in Heroku's dashboard
+(Resources) before you start any live campaigns: changing the database plan later means
+migrating data from earlier campaigns. Expect roughly $75 a month for most organizations.
 
 ### Other Options for Production Use
 
