@@ -10,7 +10,9 @@ application. The extensions let Shore:
 3. **Send opt-outs.** Tell Spoke, safely and within seconds, that someone has asked not to
    be texted through another channel (email, a phone call, a form).
 
-Status: revised draft, 2026-11-01. Nothing here is built yet. This version replaces the
+Status: approved 2026-11-01. The Spoke extension is built (2026-11-02) in
+`src/extensions/contact-loaders/shore/`; setup is in `docs/HOWTO-integrate-with-shore.md`.
+Shore's side isn't built yet. This version replaces the
 first draft after checking it against Spoke's code; "Changes from the first draft" at the end
 lists what moved and why.
 
@@ -56,8 +58,9 @@ manager, message handler or action handler is needed.
 
 **Not in scope:**
 
-- **Reversing opt-outs.** Shore never removes an opt-out in Spoke. Only the person can
-  reverse one, by texting START to Spoke.
+- **Reversing opt-outs.** Shore never removes an opt-out in Spoke. Spoke itself has no
+  built-in way to reverse one (it doesn't act on START replies), so this needs a separate
+  decision if it's ever wanted.
 - **Signing in.** Spoke already supports token sign-in (`PASSPORT_STRATEGY=token`).
 - **Push from Spoke to Shore.** Shore polls; see "Why polling" below. A push hook can be
   added later without changing the read API.
@@ -80,9 +83,10 @@ src/extensions/contact-loaders/shore/
   lib/config.js         reads and validates the config keys
   lib/signing.js        HMAC signing and verification
   lib/shore-client.js   HTTP client for Shore's endpoints
-  lib/routes-opt-outs.js
-  lib/routes-read.js    the outbound read endpoints
-  lib/queries.js        knex queries for the read endpoints
+  lib/routes.js         mounts /integrations/shore/:organizationId
+  lib/auth.js           organization + signature check for every route
+  lib/opt-outs.js       POST /opt-outs
+  lib/read-api.js       the outbound read endpoints and their queries
 __test__/extensions/contact-loaders/shore/
 docs/HOWTO-integrate-with-shore.md
 ```
@@ -103,6 +107,7 @@ wins over the environment variable.
 | `SHORE_INTEGRATION_KEY` | yes | env or org | The shared signing key (see "Security"). At least 32 random characters. Separate from `TOKEN_AUTH_SHARED_SECRET`. |
 | `SHORE_CACHE_SECONDS` | no | env or org | How long the segment list is cached in the campaign editor. Default 60. |
 | `SHORE_TIMEOUT_MS` | no | env or org | Timeout for each request to Shore. Default 10000. |
+| `SHORE_SETTLE_SECONDS` | no | env or org | How long a new row is held back from the read feeds (see "Cursors"). Default 15. |
 
 `available()` is true only when the required keys are set for the organization and
 `SHORE_URL` parses. The endpoints run the same check and answer 404 when it fails.
@@ -242,9 +247,10 @@ Modeled on `contact-loaders/civicrm` (picker and choice data) and
   `{ data: JSON.stringify({ segments }), expiresSeconds: SHORE_CACHE_SECONDS }`, or
   `{ data: JSON.stringify({ error: "shore_unreachable" }), expiresSeconds: 0 }` when Shore
   can't be reached.
-- **`react-component.js`**: a segment picker with name, description and textable count, a
-  refresh button and the time the counts were taken. Saves `{ segmentId, segmentName }` as
-  the payload. Same props and validation pattern as the CiviCRM component.
+- **`react-component.js`**: a segment picker with name, description and textable count, and
+  the time the counts were taken. Saves `{ segmentId, segmentName }` as the payload. No
+  refresh button: Spoke gives loader components no way to refetch their choice data, so the
+  list refreshes when the page is reloaded after `SHORE_CACHE_SECONDS`.
 
 **`processContactLoad(job, maxContacts, organization)`:**
 
@@ -256,11 +262,17 @@ Modeled on `contact-loaders/civicrm` (picker and choice data) and
    `message_status: "needsMessage"`, `campaign_id`, and `timezone_offset` from
    `getTimezoneByZip(zip)` when there's a ZIP. Last row wins for a repeated cell. Insert in
    batches of 1000 with `r.knex.batchInsert`.
-4. `completeContactLoad(job, null, String(segmentId), JSON.stringify({ finalCount, segmentName, loadId }))`,
-   which also removes opted-out numbers and duplicates on Spoke's side.
-5. On any error, `failedContactLoad(job, null, String(segmentId), JSON.stringify({ errors: [code] }))`
-   with `shore_unreachable`, `shore_rejected` or `load_expired`. No personal data in the
-   message.
+   Rows are inserted in Shore's order, and `completeContactLoad` keeps the highest ID per
+   cell, which is what makes the last row win.
+4. `completeContactLoad(job, null, reference, result)`, where `reference` is
+   `{ segmentId, segmentName, loadId }` and `result` is
+   `{ finalCount, invalidCellCount, loadId }` (both JSON strings). This also removes
+   opted-out numbers and duplicates on Spoke's side.
+5. On any error, delete any rows already inserted (so a failed load never leaves a partial
+   list), then `failedContactLoad(job, null, reference, JSON.stringify({ errors: [code] }))`.
+   Codes: `not_configured`, `segment_required`, `segment_not_found`, `shore_unreachable`,
+   `shore_rejected`, `shore_bad_response`, `load_expired`, `load_error`. No personal data in
+   the message.
 
 ## Part 2: interactions into Shore (the read API)
 
@@ -285,7 +297,7 @@ to that organization. Every list endpoint takes `afterId` (default 0) and `limit
 500, at most 2000), returns rows in ascending `id`, and returns `nextAfterId` (the last
 `id` in the page, or the input when the page is empty).
 
-#### `GET /campaigns?updatedSince=…`
+#### `GET /campaigns?afterId=…`
 
 Campaigns in the organization with their survey definitions, so Shore can turn interaction
 step IDs into questions and answers.
@@ -298,7 +310,8 @@ step IDs into questions and answers.
       "title": "GOTV week 1",
       "isStarted": true,
       "isArchived": false,
-      "shoreLoad": { "segmentId": "uuid", "loadId": "uuid" },
+      "createdAt": "2026-11-01T14:00:00Z",
+      "shoreLoad": { "segmentId": "uuid", "segmentName": "Pledged", "loadId": "uuid" },
       "interactionSteps": [
         {
           "id": 31,
@@ -313,7 +326,9 @@ step IDs into questions and answers.
 }
 ```
 
-`shoreLoad` comes from the campaign's last Shore contact load result, or null.
+`shoreLoad` comes from the campaign's last successful Shore contact load, or null.
+Campaigns have no update time to page on, so Shore re-reads the whole list (it's small)
+on each poll.
 
 #### `GET /messages?afterId=…`
 
@@ -400,7 +415,13 @@ is archived.
 Each request is one indexed range scan joined to `campaign_contact` and `campaign`. With
 Shore polling four feeds once a minute this is a handful of small queries a minute, well
 below what Spoke's own texter screens do. The queries go to the primary database through
-Spoke's `r.knex` (or `r.knexReadOnly` where Spoke has one configured).
+Spoke's `r.knex`, not `r.knexReadOnly`: a read replica that lags by more than the settle
+window could hide rows behind Shore's cursor.
+
+**Known limit:** each feed walks its table's IDs and keeps only this organization's rows. On
+a Spoke that hosts other busy organizations, a quiet organization's poll scans past their
+rows. That's fine for v1 (one organization per Spoke); a multi-organization version would
+add an ID window per request.
 
 ## Part 3: opt-outs into Spoke
 
@@ -416,6 +437,10 @@ retrying with backoff until it gets a 2xx and alerting its admins if it can't de
 ```json
 { "cells": ["+15555550123"], "reason": "manual", "shoreRequestId": "uuid" }
 ```
+
+`reason` is optional (default `optout`) and limited to letters, digits and `_ . : -`, up to
+64 characters. A request with any content type other than `application/vnd.shore+json`
+gets 415, before anything else is checked.
 
 **For each cell (at most 500 per request):**
 
@@ -435,9 +460,14 @@ retrying with backoff until it gets a 2xx and alerting its admins if it can't de
 5. `save` writes the opt-out **before** it runs service managers' `onOptOut`. Wrap the call
    in `try/catch`: if a service manager throws (for example `civicrm-donotsms` reads
    `contact.external_id` and calls CiviCRM), the opt-out is already recorded, so log a
-   warning with Spoke IDs only and count it as opted out.
+   warning with Spoke IDs only and count it as opted out. If the row isn't there, count it
+   as failed.
 
-**Response:** `{ "optedOut": n, "alreadyOptedOut": n, "invalid": n }`.
+A cell repeated in the same request counts as already opted out.
+
+**Response:** `{ "optedOut": n, "alreadyOptedOut": n, "invalid": n, "failed": n }`, with
+status 200, or 500 when `failed` is more than 0 so Shore retries the request (the cells
+already done are skipped next time).
 
 **Idempotent:** state is checked first, so repeats do nothing. `shoreRequestId` is for logs.
 
