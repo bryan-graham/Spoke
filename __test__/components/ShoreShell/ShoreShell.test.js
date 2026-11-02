@@ -141,11 +141,12 @@ describe("ShoreShell", () => {
     );
   });
 
-  it("shows a texter only Texting when there's no Shore menu", async () => {
+  it("shows a texter only My assignments, and no Shore mark, without Shore", async () => {
     const wrapper = await render({ roles: ["TEXTER"], path: "/app/1/todos" });
-    expect(navLabels(wrapper)).toEqual(["Texting"]);
-    const texting = wrapper.find('nav a[aria-current="page"]');
-    expect(texting.text()).toBe("Texting");
+    expect(navLabels(wrapper)).toEqual(["My assignments"]);
+    const current = wrapper.find('nav a[aria-current="page"]');
+    expect(current.text()).toBe("My assignments");
+    expect(wrapper.find('[aria-label="Shore"]').length).toBe(0);
     // react-router fills in href only inside a router; check the target.
     expect(wrapper.find('Link[aria-current="page"]').prop("to")).toBe(
       "/app/1/todos"
@@ -173,6 +174,7 @@ describe("ShoreShell", () => {
     expect(wrapper.text()).toContain("Admin");
     const inbox = wrapper.find('nav a[href="https://shore.test/o/gotv/inbox"]');
     expect(inbox.text()).toContain("3");
+    expect(wrapper.find('[aria-label="Shore"]').length).toBeGreaterThan(0);
     const current = wrapper
       .find('nav a[aria-current="page"]')
       .map(a => a.text());

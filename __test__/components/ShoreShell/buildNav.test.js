@@ -72,24 +72,24 @@ describe("buildNav", () => {
   });
 
   it("gives texters Texting with no sub-items", () => {
-    const [group] = buildNav({
-      shoreMenu: null,
+    const groups = buildNav({
+      shoreMenu: SHORE_MENU,
       organizationId: "1",
       roles: ["TEXTER"],
       currentPath: "/app/1/todos"
     });
-    expect(group.items).toHaveLength(1);
-    expect(group.items[0].subItems).toEqual([]);
+    const texting = groups[0].items.find(i => i.key === "texting");
+    expect(texting.subItems).toEqual([]);
   });
 
   it("gives admins Spoke's pages under Texting, and marks the current one", () => {
-    const [group] = buildNav({
-      shoreMenu: null,
+    const groups = buildNav({
+      shoreMenu: { groups: [{ label: null, items: [] }] },
       organizationId: "7",
       roles: admin,
       currentPath: "/admin/7/campaigns/12/edit"
     });
-    const texting = group.items[0];
+    const texting = groups[0].items[0];
     expect(texting.to).toBe("/admin/7/campaigns");
     expect(texting.subItems.map(i => i.label)).toEqual([
       "My assignments",
@@ -106,6 +106,50 @@ describe("buildNav", () => {
     expect(texting.subItems[0]).toMatchObject({
       to: "/app/7/todos",
       dataTest: "navSwitchToTexter"
+    });
+  });
+
+  describe("without Shore (not connected, unreachable, or not a member)", () => {
+    it("lists Spoke's pages at the top level for admins, with no nesting", () => {
+      const groups = buildNav({
+        shoreMenu: null,
+        organizationId: "7",
+        roles: admin,
+        currentPath: "/admin/7/people"
+      });
+      expect(groups).toHaveLength(1);
+      expect(groups[0].label).toBeNull();
+      expect(groups[0].items.map(i => i.label)).toEqual([
+        "My assignments",
+        "Campaigns",
+        "People",
+        "Message Review",
+        "Bulk Script Editor",
+        "Tags",
+        "Settings"
+      ]);
+      expect(groups[0].items.some(i => i.key === "texting")).toBe(false);
+      expect(groups[0].items.some(i => i.subItems)).toBe(false);
+      expect(groups[0].items.filter(i => i.active).map(i => i.key)).toEqual([
+        "people"
+      ]);
+    });
+
+    it("gives texters My assignments only", () => {
+      const [group] = buildNav({
+        shoreMenu: null,
+        organizationId: "1",
+        roles: ["TEXTER"],
+        currentPath: "/app/1/todos"
+      });
+      expect(group.items.map(i => [i.label, i.to, i.active])).toEqual([
+        ["My assignments", "/app/1/todos", true]
+      ]);
+    });
+
+    it("links Home when there's no organization yet", () => {
+      const [group] = buildNav({ shoreMenu: null, roles: [] });
+      expect(group.items.map(i => i.to)).toEqual(["/app"]);
     });
   });
 

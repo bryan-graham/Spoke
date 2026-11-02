@@ -197,7 +197,8 @@ export function SidebarContent({
   brandName,
   showBrand,
   organizationId,
-  onNavigate
+  onNavigate,
+  shoreConnected
 }) {
   const classes = useStyles();
   return (
@@ -227,9 +228,12 @@ export function SidebarContent({
       </nav>
       <div className={classes.footer}>
         <UserMenu orgId={organizationId} variant="sidebar" />
-        <div className={classes.mark}>
-          <ShoreWordmark />
-        </div>
+        {/* "Powered by Shore" only when the menu came from Shore. */}
+        {shoreConnected ? (
+          <div className={classes.mark}>
+            <ShoreWordmark />
+          </div>
+        ) : null}
       </div>
     </>
   );
@@ -240,7 +244,8 @@ SidebarContent.propTypes = {
   brandName: PropTypes.string,
   showBrand: PropTypes.bool,
   organizationId: PropTypes.string,
-  onNavigate: PropTypes.func
+  onNavigate: PropTypes.func,
+  shoreConnected: PropTypes.bool
 };
 
 export default function ShoreShell({
@@ -288,6 +293,7 @@ export default function ShoreShell({
       showBrand={!isPhone}
       organizationId={organizationId}
       onNavigate={isPhone ? () => setDrawerOpen(false) : undefined}
+      shoreConnected={Boolean(shoreMenu)}
     />
   );
 

@@ -9,8 +9,9 @@ import { hasRole } from "../../lib/permissions";
 //   links to Spoke's home for this person.
 // - People with admin access in Spoke see Spoke's pages as sub-items under
 //   Texting; texters see Texting alone.
-// - Without Shore's menu (not configured, unreachable, or not a Shore member),
-//   the sidebar shows Texting and its sub-items only.
+// - Without Shore's menu (Spoke not connected to Shore, Shore unreachable, or
+//   the person isn't a Shore member), there's nothing to nest under: Spoke's
+//   own pages are the top-level items (texters: My assignments).
 
 // Spoke's own pages, with the minimum role that may see each.
 export const SPOKE_SECTIONS = [
@@ -72,13 +73,15 @@ const pathMatches = (currentPath, to) =>
   Boolean(currentPath) &&
   (currentPath === to || currentPath.startsWith(`${to}/`));
 
-export function spokeSubItems({
+// Spoke's pages this person may see: My assignments for everyone, plus the
+// admin pages their role allows.
+export function spokePages({
   organizationId,
   roles,
   phoneInventoryEnabled,
   currentPath
 }) {
-  if (!organizationId || !isAdmin(roles)) {
+  if (!organizationId) {
     return [];
   }
   const items = [
@@ -91,7 +94,7 @@ export function spokeSubItems({
     },
     ...SPOKE_SECTIONS.filter(
       s =>
-        hasRole(s.role, roles) &&
+        hasRole(s.role, roles || []) &&
         (!s.needsPhoneInventory || phoneInventoryEnabled)
     ).map(s => ({
       key: s.key,
@@ -104,6 +107,12 @@ export function spokeSubItems({
     ...item,
     active: pathMatches(currentPath, item.to)
   }));
+}
+
+// Under Shore's Texting item: only for admins (a texter's Texting has nothing
+// to expand to).
+export function spokeSubItems(context) {
+  return isAdmin(context.roles) ? spokePages(context) : [];
 }
 
 function textingItem(base, context) {
@@ -136,7 +145,23 @@ function shoreItem(item) {
 
 export function buildNav({ shoreMenu, ...context }) {
   if (!shoreMenu || !Array.isArray(shoreMenu.groups)) {
-    return [{ label: null, items: [textingItem(null, context)] }];
+    const pages = spokePages(context);
+    return [
+      {
+        label: null,
+        items: pages.length
+          ? pages
+          : [
+              {
+                key: "home",
+                label: "Home",
+                icon: "home",
+                to: "/app",
+                active: true
+              }
+            ]
+      }
+    ];
   }
   let placed = false;
   const groups = shoreMenu.groups.map(group => ({

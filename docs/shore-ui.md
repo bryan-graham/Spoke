@@ -34,10 +34,13 @@ Spoke's texting screens (sending and replying) stay full screen, without the sid
     Settings, and Phone Numbers when phone inventory is on. Each page shows only if the
     person's role allows it. The current page gets a light navy tint.
   - **Texters** see Texting alone.
-  - If Spoke can't get Shore's menu (not configured, Shore unreachable, or the person isn't
-    an active Shore member), the sidebar shows Texting and its sub-items only.
+- **Without Shore** (Spoke not connected to Shore, Shore unreachable, or the person isn't
+  an active Shore member) there's no Texting parent: Spoke's pages are the top-level items,
+  with no nesting. Texters see My assignments; admins see My assignments and the admin
+  pages their role allows, with the current page highlighted.
 - **Bottom:** the signed-in person, opening the account menu (account, switch
-  organization, FAQs, superadmin tools, log out), and the Shore mark.
+  organization, FAQs, superadmin tools, log out), and the Shore mark when the menu came
+  from Shore.
 
 ## Setting up the shared menu
 
