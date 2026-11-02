@@ -1,7 +1,7 @@
 {
   "name": "spoke",
   "description": "Mass peer to peer texting tool",
-  "repository": "https://github.com/StateVoicesNational/spoke",
+  "repository": "https://github.com/bryan-graham/Spoke",
   "success_url": "/",
   "stack": "container",
   "env": {
