@@ -21,7 +21,7 @@ const SelectedCampaigns = props => (
   <div className={css(ssStyles.container)}>
     {props.campaigns.length > 0 && (
       <Chip
-        style={{ backgroundColor: "#FFC0CB", ...styles.chip }}
+        style={{ backgroundColor: "#FFC0CB", color: "#181818", ...styles.chip }}
         key={0}
         onClick={props.onClear}
         label="Clear campaigns"

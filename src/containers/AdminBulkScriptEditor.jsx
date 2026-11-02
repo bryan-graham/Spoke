@@ -19,6 +19,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
 
 import loadData from "./hoc/load-data";
+import { v } from "../styles/shore-tokens";
 
 const PROTECTED_CHARACTERS = ["/"];
 
@@ -31,8 +32,8 @@ const styles = {
     marginBottom: "15px"
   },
   code: {
-    color: "#000000",
-    backgroundColor: "#DDDDDD",
+    color: v("text"),
+    backgroundColor: v("subtle"),
     fontFamily: "monospace",
     fontSize: "1.2em",
     fontStyle: "normal",

@@ -5,6 +5,7 @@ import React from "react";
 import { mount } from "enzyme";
 import { act } from "react-dom/test-utils";
 import { MockedProvider } from "@apollo/client/testing";
+import { ColorSchemeContext } from "../../../src/components/ColorScheme";
 import ShoreShell, {
   SHELL_QUERY,
   SHELL_ADMIN_QUERY
@@ -86,7 +87,10 @@ const flush = async () => {
   });
 };
 
+let setShorePreference;
+
 const render = async ({ roles, menu, path }) => {
+  setShorePreference = jest.fn();
   global.fetch = jest.fn(() =>
     Promise.resolve(
       menu
@@ -101,13 +105,23 @@ const render = async ({ roles, menu, path }) => {
   await act(async () => {
     wrapper = mount(
       <MockedProvider mocks={[shellMock(roles), adminMock]} addTypename>
-        <ShoreShell
-          organizationId="1"
-          currentPath={path}
-          header={<h1>Page title</h1>}
+        <ColorSchemeContext.Provider
+          value={{
+            preference: "auto",
+            scheme: "light",
+            followsShore: false,
+            setPreference: jest.fn(),
+            setShorePreference
+          }}
         >
-          <p className="page-body">Hello</p>
-        </ShoreShell>
+          <ShoreShell
+            organizationId="1"
+            currentPath={path}
+            header={<h1>Page title</h1>}
+          >
+            <p className="page-body">Hello</p>
+          </ShoreShell>
+        </ColorSchemeContext.Provider>
       </MockedProvider>
     );
   });
@@ -151,6 +165,20 @@ describe("ShoreShell", () => {
     expect(wrapper.find('Link[aria-current="page"]').prop("to")).toBe(
       "/app/1/todos"
     );
+  });
+
+  it("follows the person's Shore colour scheme, or Spoke's without Shore", async () => {
+    await render({
+      roles: ["TEXTER"],
+      menu: {
+        ...SHORE_MENU,
+        user: { ...SHORE_MENU.user, colorScheme: "dark" }
+      },
+      path: "/app/1/todos"
+    });
+    expect(setShorePreference).toHaveBeenLastCalledWith("dark");
+    await render({ roles: ["TEXTER"], path: "/app/1/todos" });
+    expect(setShorePreference).toHaveBeenLastCalledWith(null);
   });
 
   it("shows Shore's menu with Spoke's pages under Texting for admins", async () => {

@@ -4,14 +4,15 @@ Spoke's interface is restyled to match Shore, following
 [shore-design-guide.md](shore-design-guide.md), and shows Shore's shared sidebar menu so
 moving between the two feels like one app.
 
-Status: first round, 2026-11-02. Light mode only.
+Status: 2026-11-02. Light and dark mode.
 
 ## What's in this round
 
 | Part | Where | Notes |
 |---|---|---|
-| Design tokens | `src/styles/shore-tokens.js` | Shore's palette (navy, ocean, shallow, sand, seagrass, coral), canvas/panel/border/text colours, fonts and layout sizes. |
-| Material-UI theme | `src/styles/mui-theme.js` | Navy primary, Inter text, DM Sans headings, 8px controls, 16px cards and dialogs, Shore-style table headers, no all-caps buttons or tabs. Every page picks this up. |
+| Design tokens | `src/styles/shore-tokens.js` | Shore's exact palette from `web/src/theme.ts` (navy, dark, ocean, shallow, sand, seagrass, coral) and the light/dark values from `global.css`, published as CSS variables (`--shore-canvas`, `--shore-text`, ...) so static styles follow the scheme. |
+| Material-UI theme | `src/styles/mui-theme.js` | Light and dark: navy primary (navy-7 light, navy-5 dark), Inter text, DM Sans headings, 8px controls, 16px cards and dialogs, Shore-style table headers, no all-caps buttons or tabs. Every page picks this up. |
+| Colour scheme | `src/components/ColorScheme.js` | Which scheme to show (below); `render-index.js` applies it before the app loads so dark mode doesn't flash white. |
 | Fonts | `src/client/index.jsx`, `webpack/config.js` | Inter and DM Sans, self-hosted with `@fontsource-variable` (replaces Poppins from Google Fonts). |
 | Shell | `src/components/ShoreShell/` | Canvas, 256px sidebar, raised page panel; on phones a 56px top bar and a slide-in sidebar. Print hides the sidebar. |
 | Page header | `src/components/TopNav.jsx` | Now the title (and back link) inside the panel. The account menu moved to the sidebar. |
@@ -39,8 +40,28 @@ Spoke's texting screens (sending and replying) stay full screen, without the sid
   with no nesting. Texters see My assignments; admins see My assignments and the admin
   pages their role allows, with the current page highlighted.
 - **Bottom:** the signed-in person, opening the account menu (account, switch
-  organization, FAQs, superadmin tools, log out), and the Shore mark when the menu came
-  from Shore.
+  organization, FAQs, superadmin tools, appearance, log out), and the Shore mark when the
+  menu came from Shore.
+
+## Light and dark mode
+
+| Situation | Spoke shows |
+|---|---|
+| Shore's menu is available | The person's Shore setting (`user.colorScheme`), so both apps match. The account menu says "(set in Shore)"; it's changed in Shore. |
+| No Shore menu | The person's choice in Spoke's account menu (Match device, Light, Dark), kept in this browser. |
+| `auto` / Match device (the default) | The device's light or dark setting, switching live when it changes. |
+
+Both settings are remembered in the browser (`spoke.shoreColorScheme`, `spoke.colorScheme`)
+so the next page load starts in the right scheme.
+
+An organization's custom palette (Settings) may change the brand colours (primary,
+secondary, error, warning, info, success) but not surfaces or text, so it can't make either
+scheme unreadable. Organizations without a custom palette now get Shore's theme: the server
+used to send Spoke's old green palette as if the organization had chosen it.
+
+Pages with hard-coded light colours were converted to the scheme's CSS variables, including
+the texting screens, chips, the script editor, notes, and the archived-campaign banner. The
+texting screens' dark grey toolbars stay as they are in both schemes.
 
 ## Setting up the shared menu
 
@@ -62,21 +83,15 @@ fields, with links limited to `http`/`https`.
 
 ## Known gaps and next steps
 
-- **Exact Shore values.** Only the shades named in the design guide are exact; the rest of
-  each 10-step scale is approximated. Copy Shore's `web/src/theme.ts` values into
-  `src/styles/shore-tokens.js`.
 - **Shore wordmark.** The sidebar shows the word "Shore" in DM Sans as a placeholder.
   Replace `src/components/ShoreShell/ShoreWordmark.jsx` with the SVG from Shore's
   `Logo.tsx`.
 - **App icons and sign-in page.** The favicon and the login page are still Spoke's.
-- **Dark mode.** Not yet: many pages hard-code light colours. The tokens and shell are ready
-  for a dark set. Shore's menu now sends the person's `user.colorScheme` (`auto`, `light` or
-  `dark`, shared across Shore's apps); Spoke's server passes it through to the sidebar, but
-  Spoke shows light until dark mode is built.
+- **Dark mode review.** Every page restyles through the theme and the converted colours,
+  but not every page has been looked at in dark mode in a real browser; expect a few spots
+  to tune (charts use fixed colours).
 - **Page patterns.** Pages restyle through the theme, but keep their own layouts. Next
   candidates for Shore's page header, cards, tables and empty states: Campaigns, Message
   Review, and the texter's assignment list.
-- **Organization palettes.** An organization's custom colours (Settings) still replace the
-  theme's palette; the shell itself always uses Shore's colours.
 - **Campaign switcher.** Shore's brand opens a campaign switcher when there are several;
   Spoke's organization switching stays in the account menu.

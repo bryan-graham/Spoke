@@ -22,6 +22,7 @@ import loadData from "./hoc/load-data";
 import { gql } from "@apollo/client";
 import theme from "../styles/theme";
 import { dataTest } from "../lib/attributes";
+import { v } from "../styles/shore-tokens";
 
 const inlineStyles = {
   stat: {
@@ -49,7 +50,9 @@ export const styles = StyleSheet.create({
     flexWrap: "wrap"
   },
   archivedBanner: {
-    backgroundColor: "#FFFBE6",
+    backgroundColor: v("noticeBg"),
+    border: `1px solid ${v("noticeBorder")}`,
+    color: v("text"),
     fontSize: "16px",
     fontWeight: "bold",
     width: "100%",
@@ -113,7 +116,7 @@ class AdminCampaignStats extends React.Component {
             <div className={css(styles.flexColumn)}>
               <Stat title="responses" count={count} />
             </div>
-            <div className={css(styles.flexColumn)} style={{maxWidth: "50%"}}>
+            <div className={css(styles.flexColumn)} style={{ maxWidth: "50%" }}>
               <div className={css(styles.rightAlign)}>
                 <Chart
                   data={options.map(answer => [
@@ -145,7 +148,10 @@ class AdminCampaignStats extends React.Component {
         0
       );
       return this.renderPieChart(
-        step.id, step.question.text, totalResponseCount, step.question.answerOptions
+        step.id,
+        step.question.text,
+        totalResponseCount,
+        step.question.answerOptions
       );
     });
   }
@@ -159,7 +165,7 @@ class AdminCampaignStats extends React.Component {
     interactionSteps.forEach(step => {
       step.question.answerOptions.forEach(answer => {
         // Grouped Answer Responses
-        answer.value.replace(/\[(.*?)\]/g, (match) => {
+        answer.value.replace(/\[(.*?)\]/g, match => {
           hasGroupedResponses = true;
           if (!groupedAnswerResponses[match]) {
             groupedAnswerResponses[match] = {
@@ -176,7 +182,7 @@ class AdminCampaignStats extends React.Component {
           });
         });
         // Grouped Question Responses
-        step.question.text.replace(/\[(.*?)\]/g, (match) => {
+        step.question.text.replace(/\[(.*?)\]/g, match => {
           hasGroupedResponses = true;
           if (!groupedQuestionResponses[match]) {
             groupedQuestionResponses[match] = {
@@ -194,7 +200,6 @@ class AdminCampaignStats extends React.Component {
           }
           qA[answer.value].responderCount += answer.responderCount;
         });
-
       });
     });
 
@@ -208,11 +213,13 @@ class AdminCampaignStats extends React.Component {
   }
 
   renderGroupedAnswerStats(groupedResponses) {
-    const { groupedAnswerResponses, totalGroupedResponsesCount } = groupedResponses;
+    const {
+      groupedAnswerResponses,
+      totalGroupedResponsesCount
+    } = groupedResponses;
     const keys = Object.keys(groupedAnswerResponses);
-    return (
-      keys.length
-        ? this.renderPieChart(
+    return keys.length
+      ? this.renderPieChart(
           "groupedResponses",
           "Responses Grouped by Answers (with []'s)",
           totalGroupedResponsesCount,
@@ -221,8 +228,7 @@ class AdminCampaignStats extends React.Component {
             responderCount: groupedAnswerResponses[k].total
           }))
         )
-        : null
-    );
+      : null;
   }
 
   renderGroupedQuestionStats(groupedResponses) {
@@ -233,9 +239,9 @@ class AdminCampaignStats extends React.Component {
         `grouped${k}`,
         `Grouped Questions with ${k}`,
         groupedQuestionResponses[k].total,
-        Object.keys(groupedQuestionResponses[k].questionAnswers).map(qkey => (
-          groupedQuestionResponses[k].questionAnswers[qkey]
-        ))
+        Object.keys(groupedQuestionResponses[k].questionAnswers).map(
+          qkey => groupedQuestionResponses[k].questionAnswers[qkey]
+        )
       )
     );
   }
@@ -443,30 +449,33 @@ class AdminCampaignStats extends React.Component {
             {campaign.exportResults.error && (
               <div>Export failed: {campaign.exportResults.error}</div>
             )}
-            {campaign.exportResults.campaignExportUrl && (
-            (campaign.exportResults.campaignExportUrl.startsWith("http")) ? (
-              <div>
-                Most recent export:
-                <a href={campaign.exportResults.campaignExportUrl} download>
-                  Contacts Export CSV
-                </a>
-                <a
-                  href={campaign.exportResults.campaignMessagesExportUrl}
-                  download
-                >
-                  Messages Export CSV
-                </a>
-              </div>
-            ) : (campaign.exportResults.campaignExportUrl.startsWith("file://") && (
+            {campaign.exportResults.campaignExportUrl &&
+              (campaign.exportResults.campaignExportUrl.startsWith("http") ? (
                 <div>
-                  Local export was successful, saved on the server at:
-                  <br />
-                  {campaign.exportResults.campaignExportUrl}
-                  <br />
-                  {campaign.exportResults.campaignMessagesExportUrl}
+                  Most recent export:
+                  <a href={campaign.exportResults.campaignExportUrl} download>
+                    Contacts Export CSV
+                  </a>
+                  <a
+                    href={campaign.exportResults.campaignMessagesExportUrl}
+                    download
+                  >
+                    Messages Export CSV
+                  </a>
                 </div>
-              )
-            ))}
+              ) : (
+                campaign.exportResults.campaignExportUrl.startsWith(
+                  "file://"
+                ) && (
+                  <div>
+                    Local export was successful, saved on the server at:
+                    <br />
+                    {campaign.exportResults.campaignExportUrl}
+                    <br />
+                    {campaign.exportResults.campaignMessagesExportUrl}
+                  </div>
+                )
+              ))}
           </div>
         )}
         {campaign.joinToken && campaign.useDynamicAssignment && (
@@ -513,7 +522,11 @@ class AdminCampaignStats extends React.Component {
         ) : (
           <CollapsibleCard
             title={`Survey Responses (${groupedResponses.totalQuestions} questions)`}
-            startCollapsed={groupedResponses.hasGroupedResponses || groupedResponses.totalQuestions > 15 /* to avoid default large renders */}
+            startCollapsed={
+              groupedResponses.hasGroupedResponses ||
+              groupedResponses.totalQuestions >
+                15 /* to avoid default large renders */
+            }
           >
             {this.renderSurveyStats()}
           </CollapsibleCard>
@@ -526,7 +539,10 @@ class AdminCampaignStats extends React.Component {
         )}
         <CollapsibleCard
           title={"Texter stats (% of first texts sent)"}
-          startCollapsed={campaign.assignments.length > 30 /* to avoid default large renders */}
+          startCollapsed={
+            campaign.assignments.length >
+            30 /* to avoid default large renders */
+          }
         >
           <TexterStats campaign={campaign} organizationId={organizationId} />
         </CollapsibleCard>
@@ -535,21 +551,22 @@ class AdminCampaignStats extends React.Component {
           message={
             <span>
               Export started -
-              {(this.props.organizationData &&
-                this.props.organizationData.organization.emailEnabled) ?
-                " we'll e-mail you when it's done. " :
-              (campaign.cacheable && (
-                <span>
-                  <Link
-                    onClick={() => {
-                      this.props.data.refetch();
-                    }}
-                  >
-                    {" Reload the page"} {/*Hacky way to add a space at the beginning */}
-                  </Link>{" "}
-                  to see a download link when its ready.
-                </span>
-              ))}
+              {this.props.organizationData &&
+              this.props.organizationData.organization.emailEnabled
+                ? " we'll e-mail you when it's done. "
+                : campaign.cacheable && (
+                    <span>
+                      <Link
+                        onClick={() => {
+                          this.props.data.refetch();
+                        }}
+                      >
+                        {" Reload the page"}{" "}
+                        {/*Hacky way to add a space at the beginning */}
+                      </Link>{" "}
+                      to see a download link when its ready.
+                    </span>
+                  )}
             </span>
           }
           autoHideDuration={campaign.cacheable ? null : 5000}

@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { fonts, tokens } from "../../styles/shore-tokens";
+import { fonts, v } from "../../styles/shore-tokens";
 
 // The quiet "powered by" Shore mark at the bottom of the sidebar.
 //
@@ -13,7 +13,7 @@ export default function ShoreWordmark({ height }) {
       aria-label="Shore"
       style={{
         display: "inline-block",
-        color: tokens.faint,
+        color: v("faint"),
         fontFamily: fonts.heading,
         fontWeight: 700,
         fontSize: height,

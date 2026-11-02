@@ -1,4 +1,5 @@
 import { StyleSheet, css } from "aphrodite";
+import { v } from "../../styles/shore-tokens";
 
 const bgGrey = "rgb(214, 215, 223)";
 
@@ -17,7 +18,8 @@ export const messageListStyles = {
     alignSelf: "flex-end",
     marginLeft: "20%",
     marginRight: "10px",
-    backgroundColor: "white",
+    backgroundColor: v("surface"),
+    color: v("text"),
     borderRadius: "16px",
     marginBottom: "10px",
     fontSize: "95%",
@@ -98,7 +100,7 @@ export const flexStyles = StyleSheet.create({
     fontSize: "80%"
   },
   popoverLinkColor: {
-    color: "rgb(81, 82, 89)"
+    color: v("text")
   },
   sectionHeaderToolbar: {
     flex: "0 0 auto"
@@ -119,7 +121,7 @@ export const flexStyles = StyleSheet.create({
   },
   sectionSideBoxContent: {
     padding: 24,
-    borderLeft: "1px solid #C1C3CC"
+    borderLeft: `1px solid ${v("border")}`
   },
   superSectionMessageBox: {
     height: "100%",
@@ -164,7 +166,7 @@ export const flexStyles = StyleSheet.create({
   sectionOptOutDialog: {
     padding: "4px 10px 9px 10px",
     zIndex: 2000,
-    backgroundColor: "white",
+    backgroundColor: v("surface"),
     overflow: "visible",
     "@media (hover: hover) and (pointer: fine)": {
       // for touchpads and phones, the edge of the tablet is easier
@@ -275,7 +277,7 @@ export const flexStyles = StyleSheet.create({
   },
   flatButton: {
     height: "40px",
-    border: "1px solid #949494",
+    border: `1px solid ${v("border")}`,
     // FlatButton property, setting here, overrides hover
     // backgroundColor: "white",
     borderRadius: "0",
@@ -287,7 +289,7 @@ export const flexStyles = StyleSheet.create({
     }
   },
   button: {
-    backgroundColor: "#FFF",
+    backgroundColor: v("surface"),
     maxWidth: "300px",
     "@media(max-width: 450px)": {
       // mobile crunch

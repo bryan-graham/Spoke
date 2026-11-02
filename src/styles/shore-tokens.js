@@ -1,120 +1,205 @@
-// Shore's design tokens, from docs/shore-design-guide.md.
+// Shore's design tokens: the palette from Shore's web/src/theme.ts and the
+// light/dark values from web/src/global.css (docs/shore-design-guide.md).
 //
-// Shades marked "guide" are exact values from the design guide. The others
-// fill in the 10-step scales (0 lightest … 9 darkest) and are close
-// approximations: replace them with Shore's web/src/theme.ts values when that
-// file is copied in.
+// Colours that change with the colour scheme are also published as CSS
+// variables (--shore-*, see cssVariables below), so Spoke's static styles
+// (aphrodite, inline styles) can follow light and dark mode too.
 
 export const palette = {
   navy: [
-    "#EEF0FB", // 0 guide
+    "#EEF0FB",
     "#DCDFF6",
-    "#BCC1EE",
-    "#959EE2", // 3 guide
-    "#7C85DC",
-    "#636CD6", // 5 guide
-    "#434CB0",
-    "#293169", // 7 guide
-    "#1E2552",
-    "#141A3C"
+    "#B9BFEC",
+    "#959EE2",
+    "#7A84DC",
+    "#636CD6",
+    "#4C55C2",
+    "#293169",
+    "#222958",
+    "#1C2147"
+  ],
+  // Dark mode's surfaces and text: deep navy, not gray. 0 is text, 2 dimmed
+  // text, 4 borders, 5-6 inputs and hover, 7 cards and menus, 8 the sidebar
+  // and canvas, 9 the page panel.
+  dark: [
+    "#E2E8F0",
+    "#CBD5E1",
+    "#94A3B8",
+    "#64748B",
+    "#212C42",
+    "#1C2639",
+    "#162033",
+    "#0F1729",
+    "#0A1122",
+    "#050A17"
   ],
   ocean: [
-    "#E8F4FB",
-    "#CFE7F5",
-    "#A4D1EC",
-    "#76B9E1",
-    "#4FA3D6",
-    "#3792CA",
-    "#2F88C1",
-    "#2A7FB8", // 7 guide
-    "#21689A",
-    "#18507A"
+    "#F2F9FD",
+    "#CFE8F6",
+    "#ADD7F0",
+    "#8AC6E9",
+    "#68B5E3",
+    "#45A4DC",
+    "#3A8AB9",
+    "#2A7FB8",
+    "#245572",
+    "#193B4F"
   ],
   shallow: [
-    "#EAF7FD",
-    "#CDEDFB",
-    "#ACE1F8",
-    "#8BD2F4", // 3 guide
-    "#6CC3EE",
-    "#4FB3E6",
-    "#3BA1D6",
-    "#2E8BBD",
-    "#24729C",
-    "#1A5779"
+    "#F7FCFE",
+    "#D3EEFB",
+    "#AFE0F7",
+    "#8BD2F4",
+    "#75B0CD",
+    "#5F8FA6",
+    "#486D7F",
+    "#324C58",
+    "#1C2A31",
+    "#06080A"
   ],
   sand: [
-    "#FBF5EC",
-    "#F5E9D7",
-    "#EFDDC2",
-    "#EAD0AD", // 3 guide
-    "#E1BE90",
-    "#D6AB73",
-    "#C3955B",
-    "#A67C47",
-    "#866338",
-    "#664B2A"
+    "#FEFCF9",
+    "#F7EDE0",
+    "#F1DFC6",
+    "#EAD0AD",
+    "#C5AF91",
+    "#9F8D76",
+    "#7A6C5A",
+    "#544B3E",
+    "#2F2A23",
+    "#090807"
   ],
   seagrass: [
-    "#EEF4F0",
-    "#DAE7DF",
-    "#B9D2C3",
-    "#97BBA6",
-    "#7AA58C",
-    "#68957C",
-    "#5B8670", // 6 guide
-    "#4B705D",
-    "#3C5A4B",
-    "#2D4438"
+    "#F4F7F5",
+    "#DAE4DF",
+    "#C1D1C9",
+    "#A7BEB2",
+    "#8EAC9C",
+    "#749986",
+    "#5B8670",
+    "#4C715E",
+    "#3E5B4C",
+    "#2F463A"
   ],
   coral: [
-    "#FCEFEB",
-    "#F8DDD5",
-    "#F1BBAC",
-    "#EA9A84",
-    "#E37E63",
-    "#DE7056",
-    "#D9654B", // 6 guide
-    "#BC523A",
-    "#9A422F",
-    "#783324"
+    "#FCF4F2",
+    "#F6DCD6",
+    "#F1C4BB",
+    "#EBAD9F",
+    "#E59583",
+    "#DF7D67",
+    "#D9654B",
+    "#B6553F",
+    "#944533",
+    "#713527"
+  ],
+  // Mantine's default gray, which Shore's light mode uses for borders and
+  // dimmed text.
+  gray: [
+    "#F8F9FA",
+    "#F1F3F5",
+    "#E9ECEF",
+    "#DEE2E6",
+    "#CED4DA",
+    "#ADB5BD",
+    "#868E96",
+    "#495057",
+    "#343A40",
+    "#212529"
   ]
 };
 
-const alpha = (hex, a) => {
+const rgba = (hex, a) => {
   const n = parseInt(hex.slice(1), 16);
   // eslint-disable-next-line no-bitwise
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 };
 
-// Light mode only for now (see docs/shore-ui.md).
-export const tokens = {
-  canvas: "#F3F4F8",
-  panel: "#FFFFFF",
-  surface: "#FFFFFF",
-  panelBorder: "#E4E6EE",
-  border: "#DEE2E6", // Mantine gray-3
-  text: "#181818",
-  dimmed: "#868E96", // Mantine gray-6
-  link: palette.ocean[7],
-  faint: "#C4C7D3",
-  primary: palette.navy[7],
-  panelShadow: `0 1px 2px ${alpha(palette.navy[7], 0.04)}, 0 4px 16px ${alpha(
-    palette.navy[7],
+const { navy, dark, coral, gray, sand } = palette;
+
+// Per-scheme values. Keys become CSS variables: canvas -> --shore-canvas.
+export const schemes = {
+  light: {
+    canvas: "#F3F4F8", // sidebar and around the panel
+    panel: "#FFFFFF", // the page
+    surface: "#FFFFFF", // cards, menus, modals
+    input: "#FFFFFF",
+    subtle: gray[1], // quiet fills (code, chips, notes)
+    border: gray[3],
+    panelBorder: "#E4E6EE",
+    text: "#181818",
+    dimmed: gray[6],
+    link: "#2A7FB8",
+    faint: "#C4C7D3", // the Shore mark
+    primary: navy[7],
+    navText: gray[8],
+    navHover: rgba(navy[9], 0.06),
+    navActiveBg: navy[7],
+    navActiveText: "#FFFFFF",
+    navActiveHover: navy[7],
+    navActiveShadow: `0 1px 2px ${rgba(navy[9], 0.2)}`,
+    subActiveBg: navy[0],
+    subActiveText: navy[7],
+    countBg: rgba(coral[6], 0.1),
+    countText: coral[6],
+    noticeBg: sand[0],
+    noticeBorder: sand[3]
+  },
+  dark: {
+    canvas: dark[8],
+    panel: dark[9],
+    surface: dark[7],
+    input: dark[6],
+    subtle: dark[6],
+    border: dark[4],
+    panelBorder: dark[5],
+    text: dark[0],
+    dimmed: dark[2],
+    link: palette.shallow[3],
+    faint: "#2E3A54",
+    primary: navy[5],
+    navText: dark[1],
+    navHover: "rgba(255, 255, 255, 0.06)",
+    navActiveBg: rgba(navy[5], 0.16),
+    navActiveText: navy[3],
+    navActiveHover: rgba(navy[5], 0.22),
+    navActiveShadow: "none",
+    subActiveBg: rgba(navy[5], 0.1),
+    subActiveText: navy[3],
+    countBg: rgba(coral[6], 0.15),
+    countText: coral[4],
+    noticeBg: rgba(sand[3], 0.08),
+    noticeBorder: rgba(sand[3], 0.3)
+  }
+};
+
+const kebab = key => key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
+
+export function cssVariables(scheme) {
+  const values = schemes[scheme] || schemes.light;
+  return Object.keys(values).reduce((out, key) => {
+    out[`--shore-${kebab(key)}`] = values[key];
+    return out;
+  }, {});
+}
+
+// Use in any style: v("canvas") -> "var(--shore-canvas)".
+export const v = key => `var(--shore-${kebab(key)})`;
+
+export const shared = {
+  panelShadow: `0 1px 2px ${rgba(navy[9], 0.04)}, 0 4px 16px ${rgba(
+    navy[9],
     0.04
   )}`,
-  navHover: alpha(palette.navy[7], 0.06),
-  navActive: palette.navy[7],
-  navActiveShadow: `0 1px 2px ${alpha(palette.navy[9], 0.24)}`,
-  countBg: alpha(palette.coral[6], 0.12),
-  countText: palette.coral[7],
-  monogram: `linear-gradient(135deg, ${palette.navy[6]}, ${palette.navy[9]})`
+  monogram: `linear-gradient(145deg, ${navy[6]}, ${navy[9]})`,
+  monogramHighlight: "inset 0 1px 0 rgba(255, 255, 255, 0.18)"
 };
 
 export const fonts = {
   text:
     '"Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif',
   heading:
-    '"DM Sans Variable", "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif'
+    '"DM Sans Variable", "DM Sans", "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif'
 };
 
 export const layout = {
@@ -131,4 +216,4 @@ export const layout = {
   iconStroke: 1.7
 };
 
-export { alpha };
+export { rgba };

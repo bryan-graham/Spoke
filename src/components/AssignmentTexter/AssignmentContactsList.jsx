@@ -11,6 +11,7 @@ import IconButton from "@material-ui/core/IconButton";
 import FilterListIcon from "@material-ui/icons/FilterList";
 import Menu from "@material-ui/core/Menu";
 import Pagination from "@material-ui/lab/Pagination";
+import { v } from "../../styles/shore-tokens";
 
 const pageSize = 50;
 
@@ -255,7 +256,7 @@ const inlineStyles = {
   },
   contactsListFilters: {
     margin: 12,
-    borderRight: "1px solid #C1C3CC",
+    borderRight: `1px solid ${v("border")}`,
     width: "calc(100% - 24px)"
   },
   searchBar: {
@@ -268,7 +269,7 @@ const inlineStyles = {
   },
   contactListScrollContainer: {
     overflow: "hidden scroll",
-    borderRight: "1px solid #C1C3CC",
+    borderRight: `1px solid ${v("border")}`,
     height: "100%"
   },
   updatedAt: {
@@ -279,7 +280,7 @@ const inlineStyles = {
     display: "flex",
     justifyContent: "center",
     padding: "12px 0",
-    borderRight: "1px solid #C1C3CC"
+    borderRight: `1px solid ${v("border")}`
   }
 };
 

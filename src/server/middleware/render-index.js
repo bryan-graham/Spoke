@@ -59,6 +59,17 @@ export default function renderIndex(html, css, assetMap) {
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
     <title>Spoke</title>
     ${externalLinks}
+    <script>
+      // Start in the right colour scheme before the app loads (keys from
+      // src/components/ColorScheme.js), so dark mode doesn't flash white.
+      try {
+        var pref = localStorage.getItem("spoke.shoreColorScheme") ||
+          localStorage.getItem("spoke.colorScheme") || "auto";
+        var dark = pref === "dark" || (pref !== "light" && window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-color-scheme", dark ? "dark" : "light");
+      } catch (e) {}
+    </script>
     <style>
       /* CSS declarations go here */
       body {
@@ -75,6 +86,11 @@ export default function renderIndex(html, css, assetMap) {
         margin: 0;
         height: 100%;
         font-size: 14px;
+      }
+
+      html[data-color-scheme="dark"] body {
+        background-color: #0A1122;
+        color: #E2E8F0;
       }
 
       /**/

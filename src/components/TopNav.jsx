@@ -8,7 +8,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 
 import { Link as RouterLink } from "react-router";
 import withMuiTheme from "./../containers/hoc/withMuiTheme";
-import { layout, tokens } from "../styles/shore-tokens";
+import { layout, v } from "../styles/shore-tokens";
 
 // The page header inside the Shore shell's panel (docs/shore-design-guide.md,
 // "Page header"): title on the left, optional back link, actions on the
@@ -24,7 +24,7 @@ const useStyles = makeStyles(() => ({
   },
   titles: { flex: 1, minWidth: 0 },
   title: { fontSize: 30, lineHeight: 1.15 },
-  description: { color: tokens.dimmed, fontSize: 16, marginTop: 6 },
+  description: { color: v("dimmed"), fontSize: 16, marginTop: 6 },
   back: { marginLeft: -8 }
 }));
 

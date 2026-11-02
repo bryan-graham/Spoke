@@ -10,6 +10,7 @@ import ListItemText from "@material-ui/core/ListItemText";
 import ListSubheader from "@material-ui/core/ListSubheader";
 import Autocomplete from "@material-ui/lab/Autocomplete";
 import TextField from "@material-ui/core/TextField";
+import { v, palette } from "../../../styles/shore-tokens";
 
 const styles = StyleSheet.create({
   form: {
@@ -18,12 +19,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start"
   },
   hint: {
-    color: "#666",
+    color: v("dimmed"),
     fontSize: "0.85em",
     margin: "4px 0 12px"
   },
   error: {
-    color: "#b00020",
+    color: palette.coral[6],
     margin: "8px 0"
   }
 });

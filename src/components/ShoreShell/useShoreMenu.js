@@ -5,14 +5,17 @@ import { useEffect, useState } from "react";
 // current. Resolves to null when there's no Shore menu (not configured, Shore
 // unreachable, or the person isn't a Shore member); the sidebar then shows
 // Spoke's own navigation only.
+//
+// Returns { menu, loaded }: loaded is false until the answer is known.
 export default function useShoreMenu(organizationId) {
-  const [menu, setMenu] = useState(null);
+  const [state, setState] = useState({ menu: null, loaded: false });
   useEffect(() => {
     if (!organizationId || typeof fetch !== "function") {
-      setMenu(null);
+      setState({ menu: null, loaded: true });
       return undefined;
     }
     let active = true;
+    setState(prev => ({ menu: prev.menu, loaded: false }));
     fetch(`/shore-menu/${encodeURIComponent(organizationId)}`, {
       credentials: "same-origin",
       cache: "no-store",
@@ -21,17 +24,20 @@ export default function useShoreMenu(organizationId) {
       .then(res => (res.ok ? res.json() : null))
       .then(json => {
         if (active) {
-          setMenu(json && Array.isArray(json.groups) ? json : null);
+          setState({
+            menu: json && Array.isArray(json.groups) ? json : null,
+            loaded: true
+          });
         }
       })
       .catch(() => {
         if (active) {
-          setMenu(null);
+          setState({ menu: null, loaded: true });
         }
       });
     return () => {
       active = false;
     };
   }, [organizationId]);
-  return menu;
+  return state;
 }

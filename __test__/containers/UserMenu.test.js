@@ -104,7 +104,8 @@ describe("UserMenu", () => {
     expect(menuItems[1].key).toBe(null); // div containing rendered AdminTools
     expect(menuItems[2].props["data-test"]).toBe("home");
     expect(menuItems[3].props["data-test"]).toBe("FAQs");
-    expect(menuItems[4].props["data-test"]).toBe("userMenuLogOut");
+    expect(menuItems[4].key).toBe(null); // div containing Appearance
+    expect(menuItems[5].props["data-test"]).toBe("userMenuLogOut");
   });
 
   it("DOESN'T render admin tools if user is NOT superadmin and MULTI_TENTANT", async () => {
@@ -132,7 +133,8 @@ describe("UserMenu", () => {
     expect(menuItems[0].props["data-test"]).toBe("userMenuDisplayName");
     expect(menuItems[2].props["data-test"]).toBe("home");
     expect(menuItems[3].props["data-test"]).toBe("FAQs");
-    expect(menuItems[4].props["data-test"]).toBe("userMenuLogOut");
+    expect(menuItems[4].key).toBe(null); // div containing Appearance
+    expect(menuItems[5].props["data-test"]).toBe("userMenuLogOut");
   });
 
   it("DOESN'T render admin tools if user is NOT superadmin and NOT MULTI_TENTANT", async () => {
@@ -160,6 +162,7 @@ describe("UserMenu", () => {
     expect(menuItems[0].props["data-test"]).toBe("userMenuDisplayName");
     expect(menuItems[2].props["data-test"]).toBe("home");
     expect(menuItems[3].props["data-test"]).toBe("FAQs");
-    expect(menuItems[4].props["data-test"]).toBe("userMenuLogOut");
+    expect(menuItems[4].key).toBe(null); // div containing Appearance
+    expect(menuItems[5].props["data-test"]).toBe("userMenuLogOut");
   });
 });

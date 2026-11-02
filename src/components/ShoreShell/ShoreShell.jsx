@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { gql, useQuery } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
@@ -7,12 +7,13 @@ import Drawer from "@material-ui/core/Drawer";
 import IconButton from "@material-ui/core/IconButton";
 import { IconMenu2 } from "@tabler/icons-react";
 import { hasRole } from "../../lib/permissions";
-import { tokens, layout, fonts } from "../../styles/shore-tokens";
+import { v, shared, layout, fonts } from "../../styles/shore-tokens";
 import UserMenu from "../../containers/UserMenu";
 import NavItem from "./NavItem";
 import ShoreWordmark from "./ShoreWordmark";
 import useShoreMenu from "./useShoreMenu";
 import { buildNav, monogram } from "./buildNav";
+import { ColorSchemeContext } from "../ColorScheme";
 
 // The Shore shell (docs/shore-design-guide.md, "Layout"): one canvas
 // background shared by the sidebar and the area around a raised page panel.
@@ -47,7 +48,7 @@ const useStyles = makeStyles({
   root: {
     display: "flex",
     minHeight: "100vh",
-    backgroundColor: tokens.canvas,
+    backgroundColor: v("canvas"),
     "@media print": { display: "block", backgroundColor: "#FFFFFF" }
   },
   sidebar: {
@@ -60,12 +61,12 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     padding: "16px 12px 14px",
-    backgroundColor: tokens.canvas,
+    backgroundColor: v("canvas"),
     "@media print": { display: "none" }
   },
   drawerPaper: {
     width: layout.sidebarWidth,
-    backgroundColor: tokens.canvas,
+    backgroundColor: v("canvas"),
     borderRight: "none"
   },
   brand: {
@@ -77,19 +78,20 @@ const useStyles = makeStyles({
   tile: {
     flexShrink: 0,
     borderRadius: 10,
-    background: tokens.monogram,
+    background: shared.monogram,
+    boxShadow: shared.monogramHighlight,
     color: "#FFFFFF",
     fontFamily: fonts.heading,
     fontWeight: 700,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    letterSpacing: "-0.02em"
+    letterSpacing: "0.02em"
   },
   brandName: {
     fontFamily: fonts.heading,
     fontWeight: 700,
-    color: tokens.text,
+    color: v("text"),
     lineHeight: 1.2,
     minWidth: 0,
     overflow: "hidden",
@@ -111,7 +113,7 @@ const useStyles = makeStyles({
     fontWeight: 600,
     letterSpacing: "0.06em",
     textTransform: "uppercase",
-    color: tokens.dimmed,
+    color: v("dimmed"),
     padding: "16px 10px 6px"
   },
   footer: {
@@ -130,7 +132,7 @@ const useStyles = makeStyles({
     alignItems: "center",
     gap: 8,
     padding: "0 8px",
-    backgroundColor: tokens.canvas,
+    backgroundColor: v("canvas"),
     "@media print": { display: "none" }
   },
   main: {
@@ -142,10 +144,10 @@ const useStyles = makeStyles({
   panel: {
     flex: 1,
     margin: `${layout.panelGap}px ${layout.panelGap}px ${layout.panelGap}px 0`,
-    backgroundColor: tokens.panel,
+    backgroundColor: v("panel"),
     borderRadius: layout.panelRadius,
-    border: `1px solid ${tokens.panelBorder}`,
-    boxShadow: tokens.panelShadow,
+    border: `1px solid ${v("panelBorder")}`,
+    boxShadow: shared.panelShadow,
     minWidth: 0,
     "@media print": {
       margin: 0,
@@ -178,7 +180,7 @@ export function CampaignBrand({ name, small }) {
     <div className={classes.brand} style={small ? { padding: 0 } : undefined}>
       <div
         className={classes.tile}
-        style={{ width: size, height: size, fontSize: small ? 13 : 17 }}
+        style={{ width: size, height: size, fontSize: small ? 12 : 15 }}
         aria-hidden
       >
         {monogram(name)}
@@ -257,7 +259,19 @@ export default function ShoreShell({
   const classes = useStyles();
   const isPhone = useMediaQuery(PHONE, { noSsr: true });
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const shoreMenu = useShoreMenu(organizationId);
+  const { menu: shoreMenu, loaded: shoreMenuLoaded } = useShoreMenu(
+    organizationId
+  );
+  const { setShorePreference } = useContext(ColorSchemeContext);
+  // Follow the person's Shore colour scheme while Shore's menu is available;
+  // once it's known there's no menu, go back to Spoke's own setting.
+  const shoreColorScheme =
+    (shoreMenu && shoreMenu.user && shoreMenu.user.colorScheme) || null;
+  useEffect(() => {
+    if (shoreMenuLoaded) {
+      setShorePreference(shoreColorScheme);
+    }
+  }, [shoreMenuLoaded, shoreColorScheme, setShorePreference]);
 
   const { data } = useQuery(SHELL_QUERY, {
     variables: { organizationId },

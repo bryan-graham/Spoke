@@ -13,13 +13,23 @@ import Avatar from "@material-ui/core/Avatar";
 import IconButton from "@material-ui/core/IconButton";
 import Divider from "@material-ui/core/Divider";
 import ButtonBase from "@material-ui/core/ButtonBase";
-import { tokens, palette } from "../styles/shore-tokens";
+import { v, palette } from "../styles/shore-tokens";
+import { IconCheck } from "@tabler/icons-react";
+import { ColorSchemeContext } from "../components/ColorScheme";
+
+const APPEARANCE = [
+  { value: "auto", label: "Match device" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" }
+];
 
 import { dataTest } from "../lib/attributes";
 import loadData from "./hoc/load-data";
 import withMuiTheme from "./hoc/withSetTheme";
 
 export class UserMenuBase extends Component {
+  static contextType = ColorSchemeContext;
+
   constructor(props) {
     super(props);
     this.state = {
@@ -134,7 +144,7 @@ export class UserMenuBase extends Component {
               display: "block",
               fontWeight: 600,
               fontSize: 14,
-              color: tokens.text,
+              color: v("text"),
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap"
@@ -146,7 +156,7 @@ export class UserMenuBase extends Component {
             style={{
               display: "block",
               fontSize: 12,
-              color: tokens.dimmed,
+              color: v("dimmed"),
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap"
@@ -156,6 +166,52 @@ export class UserMenuBase extends Component {
           </span>
         </span>
       </ButtonBase>
+    );
+  }
+
+  // Light/dark mode. With Shore connected, Spoke follows the person's Shore
+  // setting (so both apps match) and it's changed in Shore.
+  renderAppearance() {
+    const { preference, followsShore, setPreference } = this.context || {};
+    const current =
+      APPEARANCE.find(a => a.value === preference) || APPEARANCE[0];
+    if (followsShore) {
+      return (
+        <div>
+          <ListSubheader>Appearance</ListSubheader>
+          <MenuItem {...dataTest("appearanceFromShore")} disabled>
+            {current.label} (set in Shore)
+          </MenuItem>
+          <Divider />
+        </div>
+      );
+    }
+    return (
+      <div>
+        <ListSubheader>Appearance</ListSubheader>
+        {APPEARANCE.map(option => (
+          <MenuItem
+            key={option.value}
+            {...dataTest(`appearance-${option.value}`)}
+            selected={option.value === current.value}
+            onClick={() => {
+              if (setPreference) {
+                setPreference(option.value);
+              }
+            }}
+          >
+            <ListItemIcon style={{ minWidth: 28 }}>
+              {option.value === current.value ? (
+                <IconCheck size={16} stroke={1.7} />
+              ) : (
+                <span />
+              )}
+            </ListItemIcon>
+            {option.label}
+          </MenuItem>
+        ))}
+        <Divider />
+      </div>
     );
   }
 
@@ -241,6 +297,7 @@ export class UserMenuBase extends Component {
               FAQs
             </MenuItem>
             <Divider />
+            {this.renderAppearance()}
             <MenuItem
               {...dataTest("userMenuLogOut")}
               onClick={event => {

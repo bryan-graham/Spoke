@@ -22,6 +22,7 @@ import loadData from "../../../containers/hoc/load-data";
 import { defaults } from "./config";
 import AssignmentTexterFeedback from "./AssignmentTexterFeedback";
 import withMuiTheme from "../../../containers/hoc/withMuiTheme";
+import { v } from "../../../styles/shore-tokens";
 
 export const displayName = () => "Texter feedback";
 
@@ -100,7 +101,7 @@ export class TexterSideboxClassBase extends React.Component {
       marginTop: -20
     },
     messageInput: {
-      background: "#fff",
+      background: v("surface"),
       padding: 4
     },
     submitButton: {

@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { Link } from "react-router";
 import { makeStyles } from "@material-ui/core/styles";
 import { camelCase } from "lodash";
-import { tokens, layout, palette } from "../../styles/shore-tokens";
+import { v, layout, palette } from "../../styles/shore-tokens";
 import { iconFor } from "./icons";
 import { dataTest } from "../../lib/attributes";
 
@@ -15,12 +15,12 @@ const useStyles = makeStyles({
     minHeight: 36,
     padding: "0 10px",
     borderRadius: layout.controlRadius,
-    color: tokens.text,
+    color: v("navText"),
     fontSize: 14,
     fontWeight: 500,
     textDecoration: "none",
     cursor: "pointer",
-    "&:hover": { backgroundColor: tokens.navHover },
+    "&:hover": { backgroundColor: v("navHover") },
     "&:focus-visible": {
       outline: `2px solid ${palette.navy[5]}`,
       outlineOffset: 1
@@ -33,18 +33,18 @@ const useStyles = makeStyles({
     fontSize: 13
   },
   active: {
-    backgroundColor: tokens.navActive,
-    color: "#FFFFFF",
-    boxShadow: tokens.navActiveShadow,
-    "&:hover": { backgroundColor: tokens.navActive }
+    backgroundColor: v("navActiveBg"),
+    color: v("navActiveText"),
+    boxShadow: v("navActiveShadow"),
+    "&:hover": { backgroundColor: v("navActiveHover") }
   },
   // A current sub-item (a Spoke page under Texting): the parent Texting row
   // is the solid "current" row, so the page itself takes a light tint.
   subActive: {
-    backgroundColor: palette.navy[0],
-    color: palette.navy[7],
+    backgroundColor: v("subActiveBg"),
+    color: v("subActiveText"),
     fontWeight: 600,
-    "&:hover": { backgroundColor: palette.navy[0] }
+    "&:hover": { backgroundColor: v("subActiveBg") }
   },
   label: {
     flex: 1,
@@ -58,8 +58,8 @@ const useStyles = makeStyles({
     height: 20,
     padding: "0 6px",
     borderRadius: 10,
-    backgroundColor: tokens.countBg,
-    color: tokens.countText,
+    backgroundColor: v("countBg"),
+    color: v("countText"),
     fontSize: 11,
     fontWeight: 700,
     display: "inline-flex",
