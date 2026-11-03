@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { PageDescription } from "../components/ShoreShell/PageHeader";
 import React, { Component } from "react";
 import _ from "lodash";
 import { flowRight as compose } from "lodash";
@@ -439,7 +440,10 @@ export class AdminIncomingMessageList extends Component {
     };
     return (
       <div>
-        <h3> Message Review </h3>
+        <PageDescription>
+          Conversations across campaigns: filter them, reassign them to another
+          texter, or close them.
+        </PageDescription>
         <div>
           <PaginatedUsersRetriever
             organizationId={this.props.params.organizationId}
@@ -493,7 +497,6 @@ export class AdminIncomingMessageList extends Component {
             messageFilter={this.state.contactsFilter.messageStatus}
             errorCode={this.state.contactsFilter.errorCode}
           />
-          <br />
           <IncomingMessageActions
             people={this.state.reassignmentTexters}
             onReassignRequested={this.handleReassignRequested}
@@ -504,7 +507,7 @@ export class AdminIncomingMessageList extends Component {
             conversationCount={this.state.conversationCount}
             campaignsFilter={this.state.campaignsFilter}
           />
-          <br />
+          <div style={{ height: 20 }} />
           <IncomingMessageList
             organizationId={this.props.params.organizationId}
             cursor={cursor}

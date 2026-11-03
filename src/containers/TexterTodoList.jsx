@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { PageDescription } from "../components/ShoreShell/PageHeader";
 import React from "react";
 import CheckCircleIcon from "@material-ui/icons/CheckCircle";
 import Empty from "../components/Empty";
@@ -128,7 +129,11 @@ class TexterTodoList extends React.Component {
     const renderedTodos = this.renderTodoList(todos);
 
     const empty = (
-      <Empty title="You have nothing to do!" icon={<CheckCircleIcon />} />
+      <Empty
+        title="You have nothing to do!"
+        icon={<CheckCircleIcon />}
+        content="When you're assigned contacts to text, or get replies, they'll show up here."
+      />
     );
 
     return (
@@ -137,10 +142,13 @@ class TexterTodoList extends React.Component {
           open={Boolean(this.state.notifications)}
           message={"Some campaigns have replies for you to respond to!"}
           autoHideDuration={4000}
-	        onClose={() => {
+          onClose={() => {
             this.setState({ notifications: false });
           }}
         />
+        <PageDescription>
+          Campaigns you're texting for. Replies waiting for you come first.
+        </PageDescription>
         {renderedTodos.length === 0 ? empty : renderedTodos}
       </div>
     );

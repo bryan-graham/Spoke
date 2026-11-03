@@ -1,4 +1,6 @@
 import PropTypes from "prop-types";
+import { IconMessage } from "@tabler/icons-react";
+import { v, fonts } from "../styles/shore-tokens";
 import React, { Component } from "react";
 import { StyleSheet, css } from "aphrodite";
 
@@ -6,7 +8,6 @@ import Button from "@material-ui/core/Button";
 import Badge from "@material-ui/core/Badge";
 import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
-import CardHeader from "@material-ui/core/CardHeader";
 
 import { withRouter } from "react-router";
 import withMuiTheme from "../containers/hoc/withMuiTheme";
@@ -59,7 +60,8 @@ export class AssignmentSummaryBase extends Component {
     hideIfZero,
     style,
     hideBadge,
-    color
+    color,
+    primary
   }) {
     if (count === 0 && hideIfZero) {
       return "";
@@ -69,7 +71,8 @@ export class AssignmentSummaryBase extends Component {
         <Button
           {...dataTest(dataTestText)}
           disabled={disabled}
-          variant="outlined"
+          variant={primary && !disabled ? "contained" : "outlined"}
+          color={primary && !disabled ? "primary" : "default"}
           onClick={() => this.goToTodos(contactsFilter, assignment.id)}
         >
           {title}
@@ -86,7 +89,8 @@ export class AssignmentSummaryBase extends Component {
             {...dataTest(dataTestText)}
             disabled={disabled}
             onClick={() => this.goToTodos(contactsFilter, assignment.id)}
-            variant="outlined"
+            variant={primary && !disabled ? "contained" : "outlined"}
+            color={primary && !disabled ? "primary" : "default"}
           >
             {title}
           </Button>
@@ -142,29 +146,70 @@ export class AssignmentSummaryBase extends Component {
     // NOTE: we bring back archived campaigns if they have feedback
     // but want to get rid of them once feedback is acknowledged
     if (campaign.isArchived && !hasPopupSidebox) return null;
-    const campaignAllowBulkSend = texterUIConfig && texterUIConfig.sideboxChoices && texterUIConfig.sideboxChoices.includes("per-campaign-bulk-send") ? settingsData["per-campaign-bulk-send"] : true;
+    const campaignAllowBulkSend =
+      texterUIConfig &&
+      texterUIConfig.sideboxChoices &&
+      texterUIConfig.sideboxChoices.includes("per-campaign-bulk-send")
+        ? settingsData["per-campaign-bulk-send"]
+        : true;
     return (
       <div
         className={css(styles.container)}
         {...dataTest(`assignmentSummary-${campaignId}`)}
       >
         <Card>
-          <CardHeader
-            title={title}
-            subheader={description}
+          {/* Shore's card title: the campaign's logo, or a tile in its colour,
+              then the title and a dimmed description. */}
+          <div
             style={{
-              backgroundColor: primaryColor,
-              color: cardTitleTextColor
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "20px 20px 4px"
             }}
-            subheaderTypographyProps={{
-              color: "inherit"
-            }}
-            avatar={
-              logoImageUrl ? (
-                <img src={logoImageUrl} className={css(styles.image)} />
-              ) : null
-            }
-          />
+          >
+            {logoImageUrl ? (
+              <img
+                src={logoImageUrl}
+                alt=""
+                style={{ height: 40, maxWidth: 120, objectFit: "contain" }}
+              />
+            ) : (
+              <span
+                aria-hidden
+                style={{
+                  width: 28,
+                  height: 28,
+                  flexShrink: 0,
+                  borderRadius: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: primaryColor || v("subActiveBg"),
+                  color: primaryColor ? cardTitleTextColor : v("subActiveText")
+                }}
+              >
+                <IconMessage size={16} stroke={1.7} />
+              </span>
+            )}
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontFamily: fonts.heading,
+                  fontWeight: 700,
+                  fontSize: 17,
+                  color: v("text")
+                }}
+              >
+                {title}
+              </div>
+              {description ? (
+                <div style={{ color: v("dimmed"), marginTop: 2 }}>
+                  {description}
+                </div>
+              ) : null}
+            </div>
+          </div>
           <CardContent>
             {introHtml && (
               <div style={{ margin: "20px" }}>
@@ -187,7 +232,7 @@ export class AssignmentSummaryBase extends Component {
                     disabled: false,
                     contactsFilter: "text",
                     hideIfZero: true,
-                    color: "primary"
+                    color: "error"
                   })}
               {hasPopupSidebox
                 ? null
@@ -263,7 +308,11 @@ export class AssignmentSummaryBase extends Component {
               !unrepliedCount &&
               !pastMessagesCount &&
               !skippedMessagesCount &&
-              !badTimezoneCount && <div>Nothing to do</div>}
+              !badTimezoneCount && (
+                <div style={{ color: v("dimmed") }}>
+                  Nothing to text here right now.
+                </div>
+              )}
           </CardContent>
         </Card>
       </div>

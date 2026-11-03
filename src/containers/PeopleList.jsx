@@ -283,7 +283,13 @@ export class PeopleList extends Component {
     }
 
     if (!this.props.users.people.users.length) {
-      return <Empty title="No people yet" icon={<PeopleIcon />} />;
+      return (
+        <Empty
+          title="No people yet"
+          icon={<PeopleIcon />}
+          content="People you invite show up here, with their roles."
+        />
+      );
     }
 
     const { users, pageInfo } = this.props.users.people;
