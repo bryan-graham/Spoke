@@ -20,7 +20,7 @@ const inlineStyles = {
     whiteSpace: "nowrap"
   }
 };
- 
+
 const CampaignTable = ({
   data,
   campaignsToArchive,
@@ -35,9 +35,10 @@ const CampaignTable = ({
   handleChecked,
   archiveCampaign,
   unarchiveCampaign
- }) => {
-
-  const [campaigns, setCampaigns] = useState(data.organization.campaigns.campaigns.map((campaign) => ({...campaign})));
+}) => {
+  const [campaigns, setCampaigns] = useState(
+    data.organization.campaigns.campaigns.map(campaign => ({ ...campaign }))
+  );
 
   const [state, setState] = useState({
     dataTableKey: "initial"
@@ -82,7 +83,7 @@ const CampaignTable = ({
         <ArchiveIcon />
       </IconButton>
     );
-  }
+  };
 
   const sortFunc = key => {
     const sorts = {
@@ -100,7 +101,7 @@ const CampaignTable = ({
           a.isStarted * 2 + a.hasUnsentInitialMessages)
     };
     return sorts[key];
-  }
+  };
 
   const prepareTableColumns = (organization, campaigns) => {
     const extraRows = [];
@@ -288,12 +289,10 @@ const CampaignTable = ({
       },
       ...extraRows
     ];
-  }
+  };
 
   const getSelectedRowIndexes = () => {
-    const campaignIds = campaigns.map(
-      c => c.id
-    );
+    const campaignIds = campaigns.map(c => c.id);
     const indexes = campaignsToArchive.map(campaignId =>
       campaignIds.indexOf(campaignId)
     );
@@ -354,7 +353,7 @@ const CampaignTable = ({
           clearCampaignSelection();
           campaigns.sort(sortFunc(tableState.sortOrder.name));
           if (tableState.sortOrder.direction === "desc") {
-            campaigns.reverse()
+            campaigns.reverse();
           }
           break;
         case "rowSelectionChange":
@@ -372,17 +371,18 @@ const CampaignTable = ({
   };
 
   return campaigns.length === 0 ? (
-    <Empty title="No campaigns" icon={<SpeakerNotesIcon />} />
+    <Empty
+      title="No campaigns"
+      icon={<SpeakerNotesIcon />}
+      content="Campaigns you create show up here. Start one with New campaign."
+    />
   ) : (
     <div>
       <br />
       <br />
       <MUIDataTable
         data={campaigns}
-        columns={prepareTableColumns(
-          data.organization,
-          campaigns
-        )}
+        columns={prepareTableColumns(data.organization, campaigns)}
         options={options}
       />
       {/* make space for Floating Action Button */}
@@ -391,7 +391,7 @@ const CampaignTable = ({
       <br />
     </div>
   );
-}
+};
 
 CampaignTable.propTypes = {
   adminPerms: PropTypes.bool,
@@ -407,6 +407,6 @@ CampaignTable.propTypes = {
   campaignsToArchive: PropTypes.array,
   campaignsWithChangingStatus: PropTypes.array,
   currentSortBy: PropTypes.oneOf(SORTS.map(s => s.value))
-}
+};
 
 export default CampaignTable;

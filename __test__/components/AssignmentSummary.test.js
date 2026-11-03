@@ -69,8 +69,8 @@ describe("AssignmentSummary text", function t() {
     (notInUSA, allowSendAll) => {
       window.NOT_IN_USA = notInUSA;
       window.ALLOW_SEND_ALL = allowSendAll;
-      const title = summary.find(CardHeader);
-      expect(title.prop("title")).toBe("New Campaign");
+      // The card's title (Shore style; no longer a CardHeader).
+      expect(summary.text()).toContain("New Campaign");
 
       const htmlWrapper = summary.findWhere(
         d => d.length && d.type() === "div" && d.prop("dangerouslySetInnerHTML")

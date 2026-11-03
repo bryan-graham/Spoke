@@ -1,3 +1,5 @@
+import CollapsibleCard, { SummaryBadge } from "./CollapsibleCard";
+import { IconUsers } from "@tabler/icons-react";
 import React, { Component } from "react";
 import type from "prop-types";
 
@@ -5,12 +7,7 @@ import Button from "@material-ui/core/Button";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
-import Card from "@material-ui/core/Card";
-import CardHeader from "@material-ui/core/CardHeader";
-import CardContent from "@material-ui/core/CardContent";
-import Collapse from "@material-ui/core/Collapse";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import IconButton from "@material-ui/core/IconButton";
+
 import Autocomplete from "@material-ui/lab/Autocomplete";
 import TextField from "@material-ui/core/TextField";
 
@@ -108,131 +105,125 @@ class IncomingMessageActions extends Component {
     const { expanded } = this.state;
 
     return (
-      <Card>
-        <CardHeader
-          title={" Message Actions "}
-          action={
-            <IconButton>
-              <ExpandMoreIcon />
-            </IconButton>
-          }
-          onClick={() => {
-            this.setState({ expanded: !expanded });
-          }}
-        />
-        <Collapse
-          in={expanded}
-          timeout="auto"
-          unmountOnExit
-          style={{
-            margin: "20px"
-          }}
-        >
-          <CardContent>
-            <div className={css(styles.container)}>
-              <div className={css(styles.flexColumn)}>
-                <Autocomplete
-                  style={{ width: "100%" }}
-                  options={texterNodes}
-                  onChange={this.onReassignChanged}
-                  inputValue={this.state.texterSearchText}
-                  onInputChange={(event, newInputValue) => {
-                    this.setState({ newInputValue });
-                  }}
-                  getOptionLabel={option => option.text}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      placeholder="Search for a texter"
-                      label="Reassign to ..."
-                    />
-                  )}
-                />
-              </div>
-              <div className={css(styles.spacer)} />
-              <div className={css(styles.flexColumn)}>
-                <Button
-                  onClick={this.onReassignmentClicked}
-                  disabled={!this.state.reassignTo}
-                  variant="outlined"
-                >
-                  Reassign selected
-                </Button>
-              </div>
-              {this.props.conversationCount && (
-                <div className={css(styles.flexColumn)}>
-                  <Button
-                    variant="outlined"
-                    onClick={this.onReassignAllMatchingClicked}
-                    disabled={!this.state.reassignTo}
-                  >
-                    Reassign all {this.props.conversationCount} matching
-                  </Button>
-                </div>
-              )}
-              <Dialog
-                open={this.state.confirmDialogOpen}
-                onClose={this.handleConfirmDialogCancel}
-              >
-                <DialogContent>
-                  {!hasCampaignsFilter && (
-                    <div>
-                      <span className={css(styles.warning)}>
-                        WARNING: you have no campaign filter selected!
-                      </span>
-                      <br />
-                    </div>
-                  )}
-                  <div>
-                    <b>
-                      {"Are you absolutely sure you want to reassign all"}
-                      <span className={css(styles.warning)}>
-                        {` ${Number(
-                          this.props.conversationCount || 0
-                        ).toLocaleString()} `}
-                      </span>
-                      {"matching conversations?"}
-                    </b>
-                  </div>
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    color="primary"
-                    variant="outlined"
-                    onClick={this.handleConfirmDialogCancel}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    color="primary"
-                    variant="outlined"
-                    onClick={this.handleConfirmDialogReassign}
-                  >
-                    Reassign
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </div>
-            <div className={css(styles.container)}>
-              <MessageStatusSelection
-                label="Change conversation status"
-                width="30%"
-                value={this.state.messageStatus}
-                statusFilter={status =>
-                  status != "needsResponseExpired" && status != "all"
-                }
-                onChange={async event => {
-                  const { value } = event.target;
-                  console.log("change convo", value);
-                  this.setState({ messageStatus: value });
-                  await this.props.onChangeMessageStatus(value);
-                  this.setState({ messageStatus: "" });
+      <CollapsibleCard
+        title="Reassign and close"
+        icon={<IconUsers size={20} stroke={1.7} />}
+        badge={
+          typeof this.props.conversationCount === "number" ? (
+            <SummaryBadge tone="neutral">
+              {this.props.conversationCount.toLocaleString()} matching
+            </SummaryBadge>
+          ) : null
+        }
+        expanded={expanded}
+        onToggle={() => {
+          this.setState({ expanded: !expanded });
+        }}
+      >
+        <div>
+          <div className={css(styles.container)}>
+            <div className={css(styles.flexColumn)}>
+              <Autocomplete
+                style={{ width: "100%" }}
+                options={texterNodes}
+                onChange={this.onReassignChanged}
+                inputValue={this.state.texterSearchText}
+                onInputChange={(event, newInputValue) => {
+                  this.setState({ newInputValue });
                 }}
+                getOptionLabel={option => option.text}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    placeholder="Search for a texter"
+                    label="Reassign to ..."
+                  />
+                )}
               />
             </div>
-          </CardContent>
-        </Collapse>
-      </Card>
+            <div className={css(styles.spacer)} />
+            <div className={css(styles.flexColumn)}>
+              <Button
+                onClick={this.onReassignmentClicked}
+                disabled={!this.state.reassignTo}
+                variant="outlined"
+              >
+                Reassign selected
+              </Button>
+            </div>
+            {this.props.conversationCount && (
+              <div className={css(styles.flexColumn)}>
+                <Button
+                  variant="outlined"
+                  onClick={this.onReassignAllMatchingClicked}
+                  disabled={!this.state.reassignTo}
+                >
+                  Reassign all {this.props.conversationCount} matching
+                </Button>
+              </div>
+            )}
+            <Dialog
+              open={this.state.confirmDialogOpen}
+              onClose={this.handleConfirmDialogCancel}
+            >
+              <DialogContent>
+                {!hasCampaignsFilter && (
+                  <div>
+                    <span className={css(styles.warning)}>
+                      WARNING: you have no campaign filter selected!
+                    </span>
+                    <br />
+                  </div>
+                )}
+                <div>
+                  <b>
+                    {"Are you absolutely sure you want to reassign all"}
+                    <span className={css(styles.warning)}>
+                      {` ${Number(
+                        this.props.conversationCount || 0
+                      ).toLocaleString()} `}
+                    </span>
+                    {"matching conversations?"}
+                  </b>
+                </div>
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  color="primary"
+                  variant="outlined"
+                  onClick={this.handleConfirmDialogCancel}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="primary"
+                  variant="outlined"
+                  onClick={this.handleConfirmDialogReassign}
+                >
+                  Reassign
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </div>
+          <div className={css(styles.container)}>
+            <MessageStatusSelection
+              label="Change conversation status"
+              width="30%"
+              value={this.state.messageStatus}
+              statusFilter={status =>
+                status != "needsResponseExpired" && status != "all"
+              }
+              onChange={async event => {
+                const { value } = event.target;
+                console.log("change convo", value);
+                this.setState({ messageStatus: value });
+                await this.props.onChangeMessageStatus(value);
+                this.setState({ messageStatus: "" });
+              }}
+            />
+          </div>
+        </div>
+      </CollapsibleCard>
     );
   }
 }
