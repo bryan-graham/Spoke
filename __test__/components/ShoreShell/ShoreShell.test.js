@@ -213,4 +213,52 @@ describe("ShoreShell", () => {
       .map(a => a.text());
     expect(current).toEqual(["Texting", "Tags"]);
   });
+
+  describe("on a phone", () => {
+    beforeEach(() => {
+      window.matchMedia = query => ({
+        matches: true,
+        media: query,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {}
+      });
+    });
+    afterEach(() => {
+      delete window.matchMedia;
+    });
+
+    it("opens and closes the menu from anywhere on the top bar", async () => {
+      const wrapper = await render({ roles: ["TEXTER"], path: "/app/1/todos" });
+      const bar = () => wrapper.find("button[aria-expanded]").first();
+      const drawerOpen = () =>
+        wrapper
+          .findWhere(
+            n =>
+              typeof n.name() === "string" &&
+              n.name().includes("Drawer") &&
+              typeof n.prop("open") === "boolean"
+          )
+          .first()
+          .prop("open");
+      // the logo and name are inside the bar's button
+      expect(bar().text()).toContain("Graham for Providence");
+      expect(bar().prop("aria-label")).toBe("Open menu");
+      expect(drawerOpen()).toBe(false);
+
+      act(() => {
+        bar().simulate("click");
+      });
+      wrapper.update();
+      expect(drawerOpen()).toBe(true);
+      expect(bar().prop("aria-label")).toBe("Close menu");
+
+      act(() => {
+        bar().simulate("click");
+      });
+      wrapper.update();
+      expect(drawerOpen()).toBe(false);
+    });
+  });
 });

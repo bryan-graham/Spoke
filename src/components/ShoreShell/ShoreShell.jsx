@@ -4,7 +4,6 @@ import { gql, useQuery } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import useMediaQuery from "@material-ui/core/useMediaQuery";
 import Drawer from "@material-ui/core/Drawer";
-import IconButton from "@material-ui/core/IconButton";
 import { IconMenu2 } from "@tabler/icons-react";
 import { hasRole } from "../../lib/permissions";
 import { v, shared, layout, fonts } from "../../styles/shore-tokens";
@@ -132,9 +131,33 @@ const useStyles = makeStyles({
     display: "flex",
     alignItems: "center",
     gap: 8,
+    width: "100%",
     padding: "0 8px",
+    border: "none",
+    margin: 0,
+    font: "inherit",
+    color: v("text"),
+    textAlign: "left",
+    cursor: "pointer",
     backgroundColor: v("canvas"),
+    WebkitTapHighlightColor: "transparent",
+    "&:focus-visible": {
+      outline: `2px solid ${v("primary")}`,
+      outlineOffset: -2
+    },
+    "&:active $menuIcon": { backgroundColor: v("navHover") },
     "@media print": { display: "none" }
+  },
+  // looks like the icon button it replaces
+  menuIcon: {
+    width: 48,
+    height: 48,
+    flex: "0 0 48px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    color: v("dimmed")
   },
   main: {
     flex: 1,
@@ -405,17 +428,22 @@ export default function ShoreShell({
         )}
         <div className={classes.main}>
           {isPhone ? (
-            <div className={classes.topBar}>
-              <IconButton
-                aria-label="Open menu"
-                onClick={() => setDrawerOpen(true)}
-              >
+            // The whole bar (menu icon, logo and name) opens and closes
+            // the menu, so it's an easy target on a phone.
+            <button
+              type="button"
+              className={classes.topBar}
+              aria-label={drawerOpen ? "Close menu" : "Open menu"}
+              aria-expanded={drawerOpen}
+              onClick={() => setDrawerOpen(!drawerOpen)}
+            >
+              <span className={classes.menuIcon} aria-hidden>
                 <IconMenu2 size={22} stroke={layout.iconStroke} />
-              </IconButton>
+              </span>
               {brandName ? (
                 <CampaignBrand name={brandName} logoUrl={brandLogo} small />
               ) : null}
-            </div>
+            </button>
           ) : null}
           <main
             className={`${classes.panel} ${isPhone ? classes.panelPhone : ""}`}

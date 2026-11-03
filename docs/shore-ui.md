@@ -14,7 +14,7 @@ Status: 2026-11-03. Light and dark mode.
 | Material-UI theme | `src/styles/mui-theme.js` | Light and dark: navy primary (navy-7 light, navy-5 dark), Inter text, DM Sans headings, 8px controls, 16px cards and dialogs, Shore-style table headers, no all-caps buttons or tabs. Every page picks this up. |
 | Colour scheme | `src/components/ColorScheme.js` | Which scheme to show (below); `render-index.js` applies it before the app loads so dark mode doesn't flash white. |
 | Fonts | `src/client/index.jsx`, `webpack/config.js` | Inter and DM Sans, self-hosted with `@fontsource-variable` (replaces Poppins from Google Fonts). |
-| Shell | `src/components/ShoreShell/` | Canvas, 256px sidebar, raised page panel; on phones a 56px top bar and a slide-in sidebar. Print hides the sidebar. |
+| Shell | `src/components/ShoreShell/` | Canvas, 256px sidebar, raised page panel; on phones a 56px top bar and a slide-in sidebar; tapping anywhere on the top bar (menu icon, logo or name) opens and closes it. Print hides the sidebar. |
 | Page header | `src/components/TopNav.jsx` | Now the title (and back link) inside the panel. The account menu moved to the sidebar. |
 | Account menu | `src/containers/UserMenu.jsx` | Same options as before, shown at the bottom of the sidebar (avatar, name, email). |
 | Shared menu | `src/extensions/contact-loaders/shore/lib/menu.js` | Spoke's server fetches Shore's menu for the signed-in person. |
