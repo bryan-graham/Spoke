@@ -24,7 +24,11 @@ const MENU = {
   org: {
     slug: "gotv",
     name: "Graham for Providence",
-    logo: { light: "https://shore.test/logo" }
+    logo: { light: "https://shore.test/logo" },
+    publicLogo: {
+      light: "https://shore.test/api/public/v1/gotv/logo/light?v=1",
+      dark: "javascript:alert(1)"
+    }
   },
   user: {
     name: "Pat Example",
@@ -77,7 +81,14 @@ const fakeRes = () => {
 describe("cleanMenu", () => {
   it("keeps the documented fields and drops the rest", () => {
     expect(cleanMenu(MENU)).toEqual({
-      org: { slug: "gotv", name: "Graham for Providence" },
+      org: {
+        slug: "gotv",
+        name: "Graham for Providence",
+        publicLogo: {
+          light: "https://shore.test/api/public/v1/gotv/logo/light?v=1",
+          dark: null
+        }
+      },
       user: {
         name: "Pat Example",
         email: "pat@example.com",
@@ -144,6 +155,12 @@ describe("cleanMenu", () => {
     expect(scheme(undefined)).toBeNull();
     expect(scheme("purple")).toBeNull();
     expect(scheme({ evil: 1 })).toBeNull();
+  });
+
+  it("passes no logo when Shore sends none", () => {
+    expect(
+      cleanMenu({ org: { name: "X" }, groups: [] }).org.publicLogo
+    ).toEqual({ light: null, dark: null });
   });
 
   it("rejects something that isn't a menu", () => {

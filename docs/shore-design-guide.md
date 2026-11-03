@@ -121,7 +121,10 @@ Shore's own sidebar draws from this, and another app signed in through Shore sho
 ```json
 {
   "org": { "slug": "graham-for-providence", "name": "Graham for Providence",
-           "logo": { "light": "https://app.shore.vote/api/orgs/…/logo/light?v=…" } },
+           "logo": { "light": "https://…/api/orgs/graham-for-providence/logo/light?v=…",
+                     "dark": "https://…/api/orgs/graham-for-providence/logo/dark?v=…" },
+           "publicLogo": { "light": "https://…/api/public/v1/graham-for-providence/logo/light?v=…",
+                           "dark": "https://…/api/public/v1/graham-for-providence/logo/dark?v=…" } },
   "user": { "name": "Pat Example", "email": "pat@example.com", "role": "staff",
             "colorScheme": "auto" },
   "counts": { "message": 2, "volunteer": 1, "yard_sign": 0, "review": 3 },
@@ -140,5 +143,5 @@ Shore's own sidebar draws from this, and another app signed in through Shore sho
 - `icon` is a [Tabler icon](https://tabler.io/icons) name; draw it at stroke 1.7.
 - `url` is absolute, for linking back into Shore; `path` is set only for Shore's own pages; `external` items open in a new tab. In Spoke, highlight the `texting` item as the current one.
 - `count` appears only when something needs attention: draw it as the coral badge. `counts` is null for texters, whose menu is just Texting.
-- The campaign logo URLs need a Shore session, so another app shows the monogram (the campaign's initials) instead, until logos have a public home (later.md).
+- `publicLogo` is for Spoke and other apps: its addresses load without a Shore sign-in. `logo` is Shore's own copy and needs one. Each of `light` and `dark` appears only if that version was uploaded; with neither, show the monogram (the campaign's initials). The `?v=` changes with every upload, so each address can be cached indefinitely.
 - Fetch it when a page loads; no caching (`no-store`), so counts are current.

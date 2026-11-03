@@ -203,6 +203,7 @@ describe("ShoreShell", () => {
     const inbox = wrapper.find('nav a[href="https://shore.test/o/gotv/inbox"]');
     expect(inbox.text()).toContain("3");
     expect(wrapper.find('[aria-label="Shore"]').length).toBeGreaterThan(0);
+    expect(document.title).toBe("Graham for Providence • Shore • Texting");
     const current = wrapper
       .find('nav a[aria-current="page"]')
       .map(a => a.text());

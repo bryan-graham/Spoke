@@ -23,8 +23,13 @@ Spoke's texting screens (sending and replying) stay full screen, without the sid
 
 ## The sidebar
 
-- **Top:** the campaign's monogram tile and name. Shore's campaign logos need a Shore
-  session, so Spoke shows the monogram, as the design guide says.
+- **Top:** the campaign's logo from Shore's menu (`org.publicLogo`, which loads without a
+  Shore sign-in): the dark version in dark mode and the light one in light mode, falling
+  back to whichever exists. A wide wordmark stands alone; a square logo sits beside the
+  campaign name. With no logo (or if it fails to load), the campaign's initials on a navy
+  tile.
+- **Page title:** while connected to Shore, "*Campaign* • Shore • Texting" ("Shore •
+  Texting" before Shore's menu loads); otherwise "Spoke".
 - **Navigation**, built in `src/components/ShoreShell/buildNav.js`:
   - Shore's groups and items, linking back into Shore (external items open in a new tab),
     with coral count badges.
