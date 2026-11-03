@@ -143,7 +143,13 @@ export const schemes = {
     countBg: rgba(coral[6], 0.1),
     countText: coral[6],
     noticeBg: sand[0],
-    noticeBorder: sand[3]
+    noticeBorder: sand[3],
+    doneText: palette.seagrass[6],
+    doneBg: rgba(palette.seagrass[6], 0.1),
+    todoText: sand[7],
+    todoBg: rgba(sand[3], 0.35),
+    infoText: palette.ocean[7],
+    infoBg: rgba(palette.ocean[7], 0.1)
   },
   dark: {
     canvas: dark[8],
@@ -169,7 +175,13 @@ export const schemes = {
     countBg: rgba(coral[6], 0.15),
     countText: coral[4],
     noticeBg: rgba(sand[3], 0.08),
-    noticeBorder: rgba(sand[3], 0.3)
+    noticeBorder: rgba(sand[3], 0.3),
+    doneText: palette.seagrass[3],
+    doneBg: rgba(palette.seagrass[6], 0.18),
+    todoText: sand[3],
+    todoBg: rgba(sand[3], 0.14),
+    infoText: palette.shallow[3],
+    infoBg: rgba(palette.ocean[5], 0.16)
   }
 };
 

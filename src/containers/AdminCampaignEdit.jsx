@@ -6,20 +6,11 @@ import { Link } from "react-router";
 import Button from "@material-ui/core/Button";
 import ButtonGroup from "@material-ui/core/ButtonGroup";
 
-import WarningIcon from "@material-ui/icons/Warning";
-import DoneIcon from "@material-ui/icons/Done";
 import CancelIcon from "@material-ui/icons/Cancel";
 import { css } from "aphrodite";
 
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import IconButton from "@material-ui/core/IconButton";
-
-import Card from "@material-ui/core/Card";
 import CardActions from "@material-ui/core/CardActions";
-import CardHeader from "@material-ui/core/CardHeader";
-import Collapse from "@material-ui/core/Collapse";
 
-import Avatar from "@material-ui/core/Avatar";
 import CircularProgress from "@material-ui/core/CircularProgress";
 
 import theme from "../styles/theme";
@@ -36,6 +27,10 @@ import CampaignDynamicAssignmentForm from "../components/CampaignDynamicAssignme
 import CampaignTexterUIForm from "../components/CampaignTexterUIForm";
 import CampaignPhoneNumbersForm from "../components/CampaignPhoneNumbersForm";
 import CampaignServiceManagers from "../components/CampaignServiceManagers";
+import CampaignSectionCard from "../components/CampaignSectionCard";
+import { PageActions } from "../components/ShoreShell/PageHeader";
+import { v } from "../styles/shore-tokens";
+import Typography from "@material-ui/core/Typography";
 import { dataTest, camelCase } from "../lib/attributes";
 import CampaignTextingHoursForm from "../components/CampaignTextingHoursForm";
 import { styles } from "./AdminCampaignStats";
@@ -766,7 +761,13 @@ export class AdminCampaignEditBase extends React.Component {
       <div className={css(styles.container)}>
         {campaign.title && (
           <div>
-            <h1>{campaign.title}</h1>
+            <Typography
+              variant="h2"
+              component="h2"
+              style={{ margin: "0 0 12px" }}
+            >
+              {campaign.title}
+            </Typography>
             {isStarting ? (
               <div
                 style={{
@@ -855,31 +856,35 @@ export class AdminCampaignEditBase extends React.Component {
       }
     });
 
+    // Shore-style notice for what's blocking the start, under the title.
+    const notice = {
+      padding: "12px 16px",
+      borderRadius: 8,
+      border: `1px solid ${v("noticeBorder")}`,
+      backgroundColor: v("noticeBg"),
+      color: v("text"),
+      marginBottom: 8
+    };
     return (
-      <div
-        style={{
-          ...theme.layouts.multiColumn.container
-        }}
-      >
-        <div
-          style={{
-            ...theme.layouts.multiColumn.flexColumn
-          }}
-        >
-          {!orgConfigured ? (
-            <span>
-              Your organization is missing required configuration. Please{" "}
-              <Link to={settingsLink}>update your settings</Link> or contact an
-              adminstrator
-            </span>
-          ) : !isCompleted ? (
-            "You need to complete all the sections below before you can start this campaign"
-          ) : (
-            "Your campaign is all good to go! >>>>>>>>>"
-          )}
-          {this.renderCurrentEditors()}
-        </div>
-        <div>
+      <div>
+        {!orgConfigured ? (
+          <div style={notice}>
+            Texting isn't set up for this organization yet, so the campaign
+            can't start.{" "}
+            <Link to={settingsLink}>Set up texting in Settings</Link> or ask an
+            administrator.
+          </div>
+        ) : !isCompleted ? (
+          <div style={{ color: v("dimmed"), marginBottom: 8 }}>
+            Finish the sections marked “To do” to start this campaign.
+          </div>
+        ) : (
+          <div style={{ color: v("doneText"), marginBottom: 8 }}>
+            Ready to start.
+          </div>
+        )}
+        {this.renderCurrentEditors()}
+        <PageActions>
           <ButtonGroup>
             {isArchived ? (
               <Button
@@ -891,7 +896,7 @@ export class AdminCampaignEditBase extends React.Component {
                   )
                 }
               >
-                Unarchive!
+                Unarchive
               </Button>
             ) : (
               <Button
@@ -932,7 +937,7 @@ export class AdminCampaignEditBase extends React.Component {
                 }
               }}
             >
-              Start This Campaign!
+              Start campaign
             </Button>
             {/template/i.test(this.props.campaignData.campaign.title) && (
               <AdminCampaignCopy
@@ -941,7 +946,7 @@ export class AdminCampaignEditBase extends React.Component {
               />
             )}
           </ButtonGroup>
-        </div>
+        </PageActions>
       </div>
     );
   }
@@ -949,7 +954,6 @@ export class AdminCampaignEditBase extends React.Component {
     const sections = this.sections();
     const { expandedSection } = this.state;
     const { adminPerms } = this.props.params;
-    const { muiTheme } = this.props;
     return (
       <div>
         {this.renderHeader()}
@@ -958,16 +962,6 @@ export class AdminCampaignEditBase extends React.Component {
             this.checkSectionCompleted(section) &&
             this.checkSectionSaved(section);
           const sectionIsExpanded = sectionIndex === expandedSection;
-          let avatar = null;
-          const cardHeaderStyle = {
-            fontSize: 20
-          };
-          const avatarStyle = {
-            backgroundColor: this.props.muiTheme.palette.background.default,
-            height: 25,
-            width: 25
-          };
-
           const {
             sectionIsSaving,
             savePercent,
@@ -978,87 +972,41 @@ export class AdminCampaignEditBase extends React.Component {
             (section.expandAfterCampaignStarts ||
               !this.props.campaignData.campaign.isStarted) &&
             (adminPerms || section.expandableBySuperVolunteers);
-
-          if (sectionIsSaving) {
-            avatar = <CircularProgress style={avatarStyle} size={25} />;
-            cardHeaderStyle.width = `${savePercent}%`;
-          } else if (sectionIsExpanded && sectionCanExpandOrCollapse) {
-            cardHeaderStyle.backgroundColor = muiTheme.palette.warning.light;
-            cardHeaderStyle.color = muiTheme.palette.warning.contrastText;
-          } else if (sectionIsDone) {
-            avatar = (
-              <Avatar style={avatarStyle}>
-                <DoneIcon fontSize="small" color="primary" />
-              </Avatar>
-            );
-            cardHeaderStyle.backgroundColor = muiTheme.palette.primary.main;
-            cardHeaderStyle.color = muiTheme.palette.primary.contrastText;
-          } else if (!sectionIsDone) {
-            avatar = (
-              <Avatar style={avatarStyle} color="primary">
-                <WarningIcon
-                  style={{
-                    color: muiTheme.palette.warning.main,
-                    height: 16,
-                    width: 16
-                  }}
-                />
-              </Avatar>
-            );
-            cardHeaderStyle.backgroundColor = muiTheme.palette.warning.main;
-            cardHeaderStyle.color = muiTheme.palette.warning.contrastText;
-          }
+          const status = sectionIsSaving
+            ? "saving"
+            : sectionIsDone
+            ? "done"
+            : "todo";
           return (
-            <Card
+            <CampaignSectionCard
               {...dataTest(camelCase(`${section.title}`))}
               key={section.title}
-              style={{ marginTop: 1 }}
+              title={section.title}
+              status={status}
+              savePercent={sectionIsSaving ? savePercent : undefined}
+              expanded={sectionIsExpanded}
+              canToggle={Boolean(sectionCanExpandOrCollapse)}
+              onToggle={() =>
+                this.onExpandChange(sectionIndex, !sectionIsExpanded)
+              }
+              footer={
+                sectionIsSaving && adminPerms ? (
+                  <CardActions style={{ padding: "12px 20px", gap: 12 }}>
+                    <div>Current status: {savePercent}% complete</div>
+                    {jobMessage ? <div>Message: {jobMessage}</div> : null}
+                    <Button
+                      variant="outlined"
+                      startIcon={<CancelIcon />}
+                      onClick={() => this.handleDeleteJob(jobId)}
+                    >
+                      Discard job
+                    </Button>
+                  </CardActions>
+                ) : null
+              }
             >
-              <CardHeader
-                title={section.title}
-                action={
-                  sectionCanExpandOrCollapse && (
-                    <IconButton>
-                      <ExpandMoreIcon />
-                    </IconButton>
-                  )
-                }
-                disableTypography={true}
-                style={cardHeaderStyle}
-                avatar={avatar}
-                onClick={newExpandedState => {
-                  if (sectionCanExpandOrCollapse) {
-                    const currentlyOpen =
-                      this.state.expandedSection === sectionIndex;
-                    this.onExpandChange(sectionIndex, !currentlyOpen);
-                  }
-                }}
-              />
-              <Collapse
-                in={sectionIsExpanded && sectionCanExpandOrCollapse}
-                timeout="auto"
-                unmountOnExit
-                style={{
-                  margin: "20px"
-                }}
-              >
-                {this.renderCampaignFormSection(section, sectionIsSaving)}
-              </Collapse>
-              {sectionIsSaving && adminPerms ? (
-                <CardActions>
-                  <div>Current Status: {savePercent}% complete</div>
-                  {jobMessage ? <div>Message: {jobMessage}</div> : null}
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    startIcon={<CancelIcon />}
-                    onClick={() => this.handleDeleteJob(jobId)}
-                  >
-                    Discard Job
-                  </Button>
-                </CardActions>
-              ) : null}
-            </Card>
+              {this.renderCampaignFormSection(section, sectionIsSaving)}
+            </CampaignSectionCard>
           );
         })}
       </div>
