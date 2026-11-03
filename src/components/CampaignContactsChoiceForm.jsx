@@ -1,4 +1,5 @@
 import type from "prop-types";
+import { dataTest } from "../lib/attributes";
 import React from "react";
 import withMuiTheme from "./../containers/hoc/withMuiTheme";
 import GSForm from "../components/forms/GSForm";
@@ -169,30 +170,43 @@ export class CampaignContactsChoiceFormBase extends React.Component {
               <div>{this.props.jobResultMessage}</div>
             </div>
           )}
-          <GSForm
-            schema={yup.object({
-              ingestMethod: yup.string()
-            })}
-            onSubmit={formValues => {}}
-          >
-            <Select
-              name={"ingestMethod"}
-              value={ingestMethodName}
-              label={"Contact Load Method"}
-              onChange={event => {
-                const index = ingestMethodChoices.findIndex(e => {
-                  return e.name === event.target.value;
-                });
-                this.ingestMethodChanged(index);
-              }}
+          {!ingestMethodChoices || ingestMethodChoices.length === 0 ? (
+            <Alert severity="warning" {...dataTest("noContactLoaders")}>
+              No contact sources are set up for this organization, so there's
+              nothing to load contacts from yet. An administrator sets them up
+              with <code>CONTACT_LOADERS</code> (for example{" "}
+              <code>shore,csv-upload</code>) and any settings each source needs.
+              For Shore segments that's <code>SHORE_URL</code>,{" "}
+              <code>SHORE_CAMPAIGN</code> and <code>SHORE_INTEGRATION_KEY</code>
+              . See docs/HOWTO-integrate-with-shore.md.
+            </Alert>
+          ) : null}
+          {ingestMethodChoices && ingestMethodChoices.length ? (
+            <GSForm
+              schema={yup.object({
+                ingestMethod: yup.string()
+              })}
+              onSubmit={formValues => {}}
             >
-              {ingestMethodChoices.map(methodChoice => (
-                <MenuItem key={methodChoice.name} value={methodChoice.name}>
-                  {methodChoice.displayName}
-                </MenuItem>
-              ))}
-            </Select>
-          </GSForm>
+              <Select
+                name={"ingestMethod"}
+                value={ingestMethodName}
+                label={"Contact Load Method"}
+                onChange={event => {
+                  const index = ingestMethodChoices.findIndex(e => {
+                    return e.name === event.target.value;
+                  });
+                  this.ingestMethodChanged(index);
+                }}
+              >
+                {ingestMethodChoices.map(methodChoice => (
+                  <MenuItem key={methodChoice.name} value={methodChoice.name}>
+                    {methodChoice.displayName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </GSForm>
+          ) : null}
           {IngestComponent && (
             <IngestComponent
               onChange={chg => {
@@ -235,8 +249,4 @@ CampaignContactsChoiceFormBase.propTypes = {
   contactsPerPhoneNumber: type.number
 };
 
-export default withMuiTheme(
-  withRouter(
-    CampaignContactsChoiceFormBase
-    )
-  );
+export default withMuiTheme(withRouter(CampaignContactsChoiceFormBase));
