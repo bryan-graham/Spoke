@@ -15,6 +15,7 @@ import useShoreMenu from "./useShoreMenu";
 import { buildNav, monogram } from "./buildNav";
 import { ColorSchemeContext } from "../ColorScheme";
 import { pickLogo, isWordmark, useImageShape, pageTitle } from "./brand";
+import { PageHeaderContext } from "./PageHeader";
 
 // The Shore shell (docs/shore-design-guide.md, "Layout"): one canvas
 // background shared by the sidebar and the area around a raised page panel.
@@ -311,6 +312,10 @@ export default function ShoreShell({
   const classes = useStyles();
   const isPhone = useMediaQuery(PHONE, { noSsr: true });
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Slots in the page header that pages fill with <PageActions> and
+  // <PageDescription> (./PageHeader.js).
+  const [actionsNode, setActionsNode] = useState(null);
+  const [descriptionNode, setDescriptionNode] = useState(null);
   const { menu: shoreMenu, loaded: shoreMenuLoaded } = useShoreMenu(
     organizationId
   );
@@ -376,46 +381,55 @@ export default function ShoreShell({
   );
 
   return (
-    <div className={classes.root}>
-      {isPhone ? (
-        <Drawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          classes={{ paper: classes.drawerPaper }}
-        >
-          <div className={classes.sidebar} style={{ position: "static" }}>
-            {sidebar}
-          </div>
-        </Drawer>
-      ) : (
-        <aside className={classes.sidebar}>{sidebar}</aside>
-      )}
-      <div className={classes.main}>
+    <PageHeaderContext.Provider
+      value={{
+        actionsNode,
+        setActionsNode,
+        descriptionNode,
+        setDescriptionNode
+      }}
+    >
+      <div className={classes.root}>
         {isPhone ? (
-          <div className={classes.topBar}>
-            <IconButton
-              aria-label="Open menu"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <IconMenu2 size={22} stroke={layout.iconStroke} />
-            </IconButton>
-            {brandName ? (
-              <CampaignBrand name={brandName} logoUrl={brandLogo} small />
-            ) : null}
-          </div>
-        ) : null}
-        <main
-          className={`${classes.panel} ${isPhone ? classes.panelPhone : ""}`}
-        >
-          <div
-            className={`${classes.page} ${isPhone ? classes.pagePhone : ""}`}
+          <Drawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            classes={{ paper: classes.drawerPaper }}
           >
-            {header}
-            {children}
-          </div>
-        </main>
+            <div className={classes.sidebar} style={{ position: "static" }}>
+              {sidebar}
+            </div>
+          </Drawer>
+        ) : (
+          <aside className={classes.sidebar}>{sidebar}</aside>
+        )}
+        <div className={classes.main}>
+          {isPhone ? (
+            <div className={classes.topBar}>
+              <IconButton
+                aria-label="Open menu"
+                onClick={() => setDrawerOpen(true)}
+              >
+                <IconMenu2 size={22} stroke={layout.iconStroke} />
+              </IconButton>
+              {brandName ? (
+                <CampaignBrand name={brandName} logoUrl={brandLogo} small />
+              ) : null}
+            </div>
+          ) : null}
+          <main
+            className={`${classes.panel} ${isPhone ? classes.panelPhone : ""}`}
+          >
+            <div
+              className={`${classes.page} ${isPhone ? classes.pagePhone : ""}`}
+            >
+              {header}
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </PageHeaderContext.Provider>
   );
 }
 

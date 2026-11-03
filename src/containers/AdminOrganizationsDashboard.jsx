@@ -6,12 +6,11 @@ import loadData from "./hoc/load-data";
 import { withRouter, Link as RouterLink } from "react-router";
 
 import MUIDataTable from "mui-datatables";
-import Fab from "@material-ui/core/Fab";
-import AddIcon from "@material-ui/icons/Add";
+import Button from "@material-ui/core/Button";
+import { IconPlus } from "@tabler/icons-react";
 import Link from "@material-ui/core/Link";
 
 import { StyleSheet, css } from "aphrodite";
-import theme from "../styles/theme";
 
 const styles = StyleSheet.create({
   loginPage: {
@@ -63,13 +62,14 @@ class AdminOrganizationsDashboard extends React.Component {
 
   renderActionButton() {
     return (
-      <Fab
+      <Button
+        variant="contained"
         color="primary"
-        style={theme.components.floatingButton}
+        startIcon={<IconPlus size={18} stroke={1.7} />}
         onClick={this.handleCreateOrgClick}
       >
-        <AddIcon />
-      </Fab>
+        New organization
+      </Button>
     );
   }
 
@@ -153,7 +153,10 @@ class AdminOrganizationsDashboard extends React.Component {
 
     return (
       <div>
-        <TopNav title={"Manage Organizations"} />
+        <TopNav
+          title={"Manage Organizations"}
+          actions={this.renderActionButton()}
+        />
         <div className={css(styles.loginPage)}>
           <MUIDataTable
             className={css(styles.fullWidth)}
@@ -162,7 +165,6 @@ class AdminOrganizationsDashboard extends React.Component {
             options={options}
           />
         </div>
-        {this.renderActionButton()}
       </div>
     );
   }

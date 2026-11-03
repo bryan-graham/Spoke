@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import React from "react";
+import React, { useContext } from "react";
 
 import IconButton from "@material-ui/core/IconButton";
 import Typography from "@material-ui/core/Typography";
@@ -9,6 +9,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import { Link as RouterLink } from "react-router";
 import withMuiTheme from "./../containers/hoc/withMuiTheme";
 import { layout, v } from "../styles/shore-tokens";
+import { PageHeaderContext } from "./ShoreShell/PageHeader";
 
 // The page header inside the Shore shell's panel (docs/shore-design-guide.md,
 // "Page header"): title on the left, optional back link, actions on the
@@ -24,13 +25,28 @@ const useStyles = makeStyles(() => ({
   },
   titles: { flex: 1, minWidth: 0 },
   title: { fontSize: 30, lineHeight: 1.15 },
-  description: { color: v("dimmed"), fontSize: 16, marginTop: 6 },
+  description: {
+    color: v("dimmed"),
+    fontSize: 16,
+    marginTop: 6,
+    "&:empty": { display: "none" }
+  },
+  actions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    "&:empty": { display: "none" }
+  },
   back: { marginLeft: -8 }
 }));
 
 export function TopNavBase(props) {
   const classes = useStyles();
   const { backToURL, title, description, actions } = props;
+  // Pages add their main actions and a description with <PageActions> and
+  // <PageDescription>; they land in these slots.
+  const { setActionsNode, setDescriptionNode } = useContext(PageHeaderContext);
   return (
     <header className={classes.header}>
       {backToURL && (
@@ -47,8 +63,16 @@ export function TopNavBase(props) {
         {description ? (
           <div className={classes.description}>{description}</div>
         ) : null}
+        {setDescriptionNode ? (
+          <div className={classes.description} ref={setDescriptionNode} />
+        ) : null}
       </div>
-      {actions ? <div>{actions}</div> : null}
+      <div className={classes.actions}>
+        {actions}
+        {setActionsNode ? (
+          <div className={classes.actions} ref={setActionsNode} />
+        ) : null}
+      </div>
     </header>
   );
 }

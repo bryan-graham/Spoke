@@ -4,9 +4,12 @@ import { StyleSheet, css } from "aphrodite";
 import { withRouter } from "react-router";
 import { gql } from "@apollo/client";
 
-import Fab from "@material-ui/core/Fab";
-import AddIcon from "@material-ui/icons/Add";
-import ArchiveIcon from "@material-ui/icons/Archive";
+import Button from "@material-ui/core/Button";
+import { IconPlus, IconArchive } from "@tabler/icons-react";
+import {
+  PageActions,
+  PageDescription
+} from "../components/ShoreShell/PageHeader";
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import Paper from "@material-ui/core/Paper";
 import IconButton from "@material-ui/core/IconButton";
@@ -17,7 +20,6 @@ import Select from "@material-ui/core/Select";
 import LoadingIndicator from "../components/LoadingIndicator";
 import { dataTest } from "../lib/attributes";
 import loadData from "./hoc/load-data";
-import theme from "../styles/theme";
 import SortBy, { ID_DESC_SORT } from "../components/AdminCampaignList/SortBy";
 import Search from "../components/Search";
 import CampaignTable from "../components/AdminCampaignList/CampaignTable";
@@ -335,26 +337,34 @@ export const AdminCampaignList = ({ params, mutations, router, data }) => {
     if (state.archiveMultiple) {
       const keys = state.campaignsToArchive;
       return (
-        <Fab
-          color="primary"
-          {...dataTest("archiveCampaigns")}
-          style={theme.components.floatingButton}
-          onClick={() => handleClickArchiveMultipleButton(keys)}
-          disabled={!keys.length}
-        >
-          <ArchiveIcon />
-        </Fab>
+        <PageActions>
+          <Button
+            variant="contained"
+            color="primary"
+            {...dataTest("archiveCampaigns")}
+            startIcon={<IconArchive size={18} stroke={1.7} />}
+            onClick={() => handleClickArchiveMultipleButton(keys)}
+            disabled={!keys.length}
+          >
+            {keys.length
+              ? `Archive ${keys.length} selected`
+              : "Archive selected"}
+          </Button>
+        </PageActions>
       );
     }
     return (
-      <Fab
-        color="primary"
-        {...dataTest("addCampaign")}
-        style={theme.components.floatingButton}
-        onClick={handleClickNewButton}
-      >
-        <AddIcon />
-      </Fab>
+      <PageActions>
+        <Button
+          variant="contained"
+          color="primary"
+          {...dataTest("addCampaign")}
+          startIcon={<IconPlus size={18} stroke={1.7} />}
+          onClick={handleClickNewButton}
+        >
+          New campaign
+        </Button>
+      </PageActions>
     );
   };
   // don't think this is right
@@ -381,6 +391,9 @@ export const AdminCampaignList = ({ params, mutations, router, data }) => {
         />
       )}
 
+      <PageDescription>
+        Texting campaigns: their scripts, contacts and texters.
+      </PageDescription>
       {params.adminPerms && renderActionButton()}
     </div>
   );

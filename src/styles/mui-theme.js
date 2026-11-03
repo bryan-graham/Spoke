@@ -102,7 +102,46 @@ export function buildThemeOptions(scheme = "light", orgPalette = null) {
         outlined: { backgroundColor: t.surface, borderColor: t.border }
       },
       MuiPaper: {
-        rounded: { borderRadius: layout.controlRadius }
+        rounded: { borderRadius: layout.controlRadius },
+        // Raised cards in pages (elevation 1-4) become Shore's flat bordered
+        // cards. Menus, popovers and dialogs (higher elevations) keep their
+        // shadows.
+        ...[1, 2, 3, 4].reduce((out, n) => {
+          out[`elevation${n}`] = {
+            boxShadow: "none",
+            border: `1px solid ${t.panelBorder}`,
+            borderRadius: layout.cardRadius
+          };
+          return out;
+        }, {})
+      },
+      // mui-datatables (Campaigns, People, Phone Numbers, ...): a bordered,
+      // rounded box, and Shore's quiet small-capitals column headings.
+      MUIDataTable: {
+        paper: {
+          border: `1px solid ${t.panelBorder}`,
+          borderRadius: layout.cardRadius,
+          overflow: "hidden",
+          boxShadow: "none"
+        }
+      },
+      MUIDataTableHeadCell: {
+        root: {
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: t.dimmed
+        },
+        data: {
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: t.dimmed
+        },
+        sortAction: { alignItems: "center" },
+        toolButton: { textTransform: "uppercase" }
       },
       MuiCard: {
         root: {

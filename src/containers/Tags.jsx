@@ -9,8 +9,11 @@ import PropTypes from "prop-types";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Dialog from "@material-ui/core/Dialog";
 import DialogContent from "@material-ui/core/DialogContent";
-import Fab from "@material-ui/core/Fab";
-import AddIcon from "@material-ui/icons/Add";
+import { IconPlus } from "@tabler/icons-react";
+import {
+  PageActions,
+  PageDescription
+} from "../components/ShoreShell/PageHeader";
 import DeleteIcon from "@material-ui/icons/Delete";
 import CreateIcon from "@material-ui/icons/Create";
 import Button from "@material-ui/core/Button";
@@ -18,11 +21,11 @@ import Card from "@material-ui/core/Card";
 import CardContent from "@material-ui/core/CardContent";
 
 import Chip from "../components/Chip";
-import theme from "../styles/theme";
 import GSForm from "../components/forms/GSForm";
 import GSTextField from "../components/forms/GSTextField";
 import GSSubmitButton from "../components/forms/GSSubmitButton";
 import loadData from "./hoc/load-data";
+import { dataTest } from "../lib/attributes";
 
 const styles = StyleSheet.create({
   cards: {
@@ -124,7 +127,7 @@ export class Tags extends React.Component {
   }
 
   render() {
-    const tags = this.props.data.organization.tags
+    const tags = this.props.data.organization.tags;
     const {
       openTagDialog,
       dialogSubmitHandler,
@@ -166,13 +169,20 @@ export class Tags extends React.Component {
             </CardContent>
           </Card>
         ))}
-        <Fab
-          color="primary"
-          style={theme.components.floatingButton}
-          onClick={this.handleOpen}
-        >
-          <AddIcon />
-        </Fab>
+        <PageDescription>
+          Tags texters can add to conversations, e.g. to flag a follow-up.
+        </PageDescription>
+        <PageActions>
+          <Button
+            {...dataTest("addTag")}
+            variant="contained"
+            color="primary"
+            startIcon={<IconPlus size={18} stroke={1.7} />}
+            onClick={this.handleOpen}
+          >
+            New tag
+          </Button>
+        </PageActions>
         <Dialog
           open={openTagDialog}
           onClose={this.handleClose}
