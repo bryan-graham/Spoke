@@ -1,144 +1,109 @@
 import PropTypes from "prop-types";
 import React from "react";
 import { StyleSheet, css } from "aphrodite";
-import Toolbar from "@material-ui/core/Toolbar";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
-import HomeIcon from "@material-ui/icons/Home";
-import BuildIcon from "@material-ui/icons/Build";
+import { IconArrowLeft, IconLayoutSidebarRight } from "@tabler/icons-react";
+import { v, fonts, layout } from "../../styles/shore-tokens";
 
-const inlineStyles = {
-  toolbar: {
-    backgroundColor: "rgb(81, 82, 89)",
-    color: "white",
-    padding: 0,
-    minHeight: "inherit"
-  }
-};
+// The texting screen's top bar, in Shore's style: the canvas colour, like
+// Shore's sidebar and phone top bar, with a back link, the campaign's title,
+// and (on phones) a button for the campaign's side panels.
 
-const styles = StyleSheet.create({
-  grow: {
-    flexGrow: 1
-  },
-  topFlex: {
+export const headerStyles = StyleSheet.create({
+  bar: {
     display: "flex",
-    flexWrap: "wrap",
-    flexDirection: "column",
-    alignContent: "flex-start"
-    // marginLeft: "-24px"
+    alignItems: "center",
+    gap: 10,
+    minHeight: 56,
+    padding: "0 12px",
+    backgroundColor: v("canvas"),
+    borderBottom: `1px solid ${v("panelBorder")}`,
+    color: v("text"),
+    boxSizing: "border-box"
   },
-  campaignData: {
-    flex: "1 2 auto",
-    maxWidth: "80%",
-    "@media(max-width: 375px)": {
-      maxWidth: "70%" // iphone 5 and X
+  iconButton: {
+    width: 36,
+    height: 36,
+    flex: "0 0 36px",
+    padding: 0,
+    borderRadius: layout.controlRadius,
+    color: v("dimmed"),
+    ":hover": {
+      backgroundColor: v("navHover"),
+      color: v("text")
     }
   },
-  contactData: {
-    flex: "1 2 auto",
-    maxWidth: "80%",
-    "@media(max-width: 375px)": {
-      maxWidth: "50%" // iphone 5 and X
-    }
+  bordered: {
+    border: `1px solid ${v("border")}`,
+    backgroundColor: v("surface")
   },
   titleArea: {
-    // give room for the wrench sideboxes icon
-    maxWidth: "calc(100% - 100px)"
+    flex: "1 1 auto",
+    minWidth: 0
   },
-  contactArea: {
-    // give room for prev/next arrows
-    maxWidth: "calc(100% - 200px)"
-  },
-  titleSmall: {
-    height: "18px",
-    lineHeight: "18px",
-    paddingTop: "4px",
-    paddingRight: "10px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    maxWidth: "95%"
-  },
-  titleBig: {
-    height: "34px",
-    lineHeight: "34px",
-    paddingRight: "10px",
-    fontWeight: "bold",
-    color: "white",
+  eyebrow: {
+    fontSize: 12,
+    lineHeight: "16px",
+    color: v("dimmed"),
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap"
   },
-  contactToolbarIconButton: {
-    padding: "3px",
-    height: "56px",
-    "@media(max-width: 350px)": {
-      width: "50px"
-    }
+  title: {
+    fontFamily: fonts.heading,
+    fontWeight: 700,
+    fontSize: 16,
+    lineHeight: "22px",
+    letterSpacing: "-0.01em",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap"
   },
-  navigationSideBox: {
-    flexBasis: "24px",
-    // width also in Controls.jsx::getSideboxDialogOpen
+  sideboxButton: {
+    // the side panels show beside the conversation from 575px
+    // (StyleControls sectionSideBox, Controls getSideboxDialogOpen)
     "@media(min-width: 575px)": {
       display: "none"
     }
-  },
-  navigation: {
-    flexGrow: 0,
-    flexShrink: 0,
-    display: "flex"
-    // flexDirection: "column",
-    // flexWrap: "wrap"
-  },
-  navigationTitle: {
-    width: "4em",
-    // height: "100%",
-    padding: "6px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
   }
 });
 
+export const iconProps = { size: 20, stroke: layout.iconStroke };
+
 const CampaignToolbar = props => (
-  <Toolbar style={inlineStyles.toolbar}>
-    <Tooltip title="Return Home">
+  <div className={css(headerStyles.bar)}>
+    <Tooltip title="Back to my assignments">
       <IconButton
         onClick={props.onExit}
-        className={css(styles.contactToolbarIconButton)}
+        className={css(headerStyles.iconButton)}
+        aria-label="Back to my assignments"
       >
-        <HomeIcon style={{ width: 42 }} htmlColor="white" />
+        <IconArrowLeft {...iconProps} />
       </IconButton>
     </Tooltip>
-    <div className={css(styles.titleArea)}>
-      <div className={css(styles.titleSmall)} style={{ color: "#B0B0B0" }}>
-        Campaign ID: {props.campaign.id}
+    <div className={css(headerStyles.titleArea)}>
+      <div className={css(headerStyles.eyebrow)}>
+        Campaign {props.campaign.id}
       </div>
-      <div className={css(styles.titleBig)} title={props.campaign.title}>
+      <div className={css(headerStyles.title)} title={props.campaign.title}>
         {props.campaign.title}
       </div>
     </div>
     {props.onSideboxButtonClick && (
-      <React.Fragment>
-        <div className={css(styles.grow)}></div>
-        <div
-          className={`${css(styles.navigation)} ${css(
-            styles.navigationSideBox
-          )}`}
-        >
-          <Tooltip title="Open Details">
-            <IconButton
-              onClick={props.onSideboxButtonClick}
-              className={css(styles.contactToolbarIconButton)}
-              style={{ flex: "0 0 56px", width: "45px" }}
-            >
-              <BuildIcon htmlColor="white" />
-            </IconButton>
-          </Tooltip>
-        </div>
-      </React.Fragment>
+      <div className={css(headerStyles.sideboxButton)}>
+        <Tooltip title="Open details">
+          <IconButton
+            onClick={props.onSideboxButtonClick}
+            className={css(headerStyles.iconButton)}
+            aria-label="Open details"
+          >
+            <IconLayoutSidebarRight {...iconProps} />
+          </IconButton>
+        </Tooltip>
+      </div>
     )}
-  </Toolbar>
+  </div>
 );
 
 CampaignToolbar.propTypes = {

@@ -16,8 +16,8 @@ import CardContent from "@material-ui/core/CardContent";
 import Button from "@material-ui/core/Button";
 import Popover from "@material-ui/core/Popover";
 import SearchBar from "material-ui-search-bar";
-import ArrowDropDownIcon from "@material-ui/icons/ArrowDropDown";
 import CreateIcon from "@material-ui/icons/Create";
+import { IconChevronDown, IconSend } from "@tabler/icons-react";
 
 import * as yup from "yup";
 import Form from "react-formal";
@@ -36,7 +36,18 @@ import { dataTest } from "../../lib/attributes";
 import ContactToolbar from "./ContactToolbar";
 import { getCookie, setCookie } from "../../lib/cookie";
 import { deepCopy } from "../utils";
-import { v, palette } from "../../styles/shore-tokens";
+import { v, layout } from "../../styles/shore-tokens";
+
+// A shortcut or choice button: selected ones get the light navy tint Shore
+// uses for the current sub-page.
+const choiceStyle = selected =>
+  selected
+    ? {
+        backgroundColor: v("subActiveBg"),
+        color: v("subActiveText"),
+        borderColor: v("subActiveText")
+      }
+    : { backgroundColor: v("surface"), color: v("text") };
 
 export class AssignmentTexterContactControls extends React.Component {
   constructor(props) {
@@ -615,14 +626,9 @@ export class AssignmentTexterContactControls extends React.Component {
         button = (
           <Button
             onClick={onClick("needsResponse")}
-            style={{
-              color: this.props.muiTheme.palette.text.primary,
-              backgroundColor: this.props.muiTheme.palette.background.default,
-              flex: "1 1 auto"
-            }}
+            className={css(flexStyles.secondaryAction)}
             disabled={!!this.props.contact.optOut}
-            color="default"
-            variant="contained"
+            variant="outlined"
           >
             Reopen
           </Button>
@@ -631,13 +637,9 @@ export class AssignmentTexterContactControls extends React.Component {
         button = (
           <Button
             onClick={onClick("closed", true)}
-            style={{
-              color: this.props.muiTheme.palette.text.primary,
-              backgroundColor: this.props.muiTheme.palette.background.default
-            }}
+            className={css(flexStyles.secondaryAction)}
             disabled={!!this.props.contact.optOut}
-            color="default"
-            variant="contained"
+            variant="outlined"
           >
             Skip
           </Button>
@@ -653,10 +655,14 @@ export class AssignmentTexterContactControls extends React.Component {
     }
     return (
       <Card className={css(flexStyles.sectionOptOutDialog)}>
-        <CardHeader title="Opt out user" />
-        <CardContent className={css(flexStyles.sectionOptOutDialog)}>
+        <CardHeader
+          title={`Opt out ${this.props.contact.firstName || "this contact"}`}
+          subheader="They won't get any more texts. Send a last message, or none."
+          titleTypographyProps={{ variant: "h6" }}
+          subheaderTypographyProps={{ variant: "body2" }}
+        />
+        <CardContent className={css(flexStyles.optOutDialogContent)}>
           <GSForm
-            className={css(flexStyles.sectionOptOutDialog)}
             schema={this.optOutSchema}
             onChange={({ optOutMessageText }) =>
               this.setState({ optOutMessageText })
@@ -664,82 +670,54 @@ export class AssignmentTexterContactControls extends React.Component {
             value={{ optOutMessageText: this.state.optOutMessageText }}
             onSubmit={this.props.onOptOut}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "left"
-              }}
-            >
+            <div className={css(flexStyles.optOutChoices)}>
               <Button
-                style={{
-                  margin: "9px",
-                  color:
-                    this.state.optOutMessageText ===
+                style={choiceStyle(
+                  this.state.optOutMessageText ===
                     this.state.contactOptOutMessage
-                      ? "white"
-                      : v("text"),
-                  backgroundColor:
-                    this.state.optOutMessageText ===
-                    this.state.contactOptOutMessage
-                      ? "#727272"
-                      : v("surface")
-                }}
+                )}
                 onClick={() => {
                   this.setState({
                     optOutMessageText: this.state.contactOptOutMessage
                   });
                 }}
-                variant="contained"
+                variant="outlined"
               >
-                Standard Message
+                Standard message
               </Button>
               <Button
-                style={{
-                  margin: "0 9px 0 9px",
-                  color:
-                    this.state.optOutMessageText === "" ? "white" : v("text"),
-                  backgroundColor:
-                    this.state.optOutMessageText === ""
-                      ? "#727272"
-                      : v("surface")
-                }}
+                style={choiceStyle(this.state.optOutMessageText === "")}
                 onClick={() => {
                   this.setState({ optOutMessageText: "" });
                 }}
-                variant="contained"
+                variant="outlined"
               >
-                No Message
+                No message
               </Button>
             </div>
             <Form.Field
               as={GSTextField}
               name="optOutMessageText"
+              label="Last message"
+              variant="outlined"
               fullWidth
               multiline
               rows={2}
             />
             <div className={css(flexStyles.subSectionOptOutDialogActions)}>
-              <Button
-                className={css(flexStyles.button)}
-                style={inlineStyles.inlineBlock}
-                onClick={this.handleCloseDialog}
-                variant="outlined"
-              >
+              <Button onClick={this.handleCloseDialog} variant="outlined">
                 Cancel
               </Button>
               <Button
                 type="submit"
+                color="primary"
                 style={{
-                  ...inlineStyles.inlineBlock,
-                  borderColor: palette.coral[7],
-                  color: "white",
-                  marginLeft: "9px",
-                  backgroundColor: palette.coral[6]
+                  color: "#FFFFFF",
+                  backgroundColor: this.props.muiTheme.palette.error.main
                 }}
                 variant="contained"
               >
-                &crarr; Opt-Out
+                Opt out
               </Button>
             </div>
           </GSForm>
@@ -777,6 +755,7 @@ export class AssignmentTexterContactControls extends React.Component {
             className={css(flexStyles.subSectionMessageFieldTextField)}
             name="messageText"
             label="Your message"
+            variant="outlined"
             onFocus={() => {
               this.setState({ messageFocus: true });
             }}
@@ -934,10 +913,10 @@ export class AssignmentTexterContactControls extends React.Component {
               });
             }}
             style={{
-              marginRight: "9px",
-              backgroundColor: isCurrentAnswer(opt) ? "#727272" : v("surface"),
-              color: isCurrentAnswer(opt) ? "white" : v("text")
+              marginRight: "8px",
+              ...choiceStyle(isCurrentAnswer(opt))
             }}
+            size="small"
             variant="outlined"
           >
             {opt.label}
@@ -950,13 +929,11 @@ export class AssignmentTexterContactControls extends React.Component {
               this.handleCannedResponseChange(script);
             }}
             style={{
-              marginRight: "9px",
-              color: isCurrentCannedResponse(script) ? "white" : v("text"),
-              backgroundColor: isCurrentCannedResponse(script)
-                ? "#727272"
-                : v("surface")
+              marginRight: "8px",
+              ...choiceStyle(isCurrentCannedResponse(script))
             }}
             title={script.title}
+            size="small"
             variant="outlined"
           >
             {this.getShortButtonText(
@@ -982,28 +959,28 @@ export class AssignmentTexterContactControls extends React.Component {
           onClick={
             !disabled ? this.handleOpenAnswerResponsePopover : noAction => {}
           }
-          style={{
-            backgroundColor: this.props.muiTheme.palette.background.default,
-            color: this.props.muiTheme.palette.text.primary
-          }}
           disabled={disabled}
           variant="outlined"
+          endIcon={<IconChevronDown size={16} stroke={layout.iconStroke} />}
         >
-          All Responses{" "}
-          <ArrowDropDownIcon style={{ verticalAlign: "middle" }} />
+          All responses
         </Button>
 
         <Button
           {...dataTest("optOut")}
           onClick={this.handleOpenDialog}
-          style={{
-            color: this.props.muiTheme.palette.error.main,
-            backgroundColor: this.props.muiTheme.palette.background.default
-          }}
+          style={
+            this.props.contact.optOut
+              ? undefined
+              : {
+                  color: this.props.muiTheme.palette.error.main,
+                  borderColor: this.props.muiTheme.palette.error.main
+                }
+          }
           disabled={!!this.props.contact.optOut}
-          variant="contained"
+          variant="outlined"
         >
-          Opt-out
+          Opt out
         </Button>
       </div>
     );
@@ -1015,19 +992,17 @@ export class AssignmentTexterContactControls extends React.Component {
       <div
         key="renderMessagingRowSendSkip"
         className={css(flexStyles.sectionSend)}
-        style={{ height: "54px" }}
       >
         <Button
           {...dataTest("send")}
           onClick={this.handleClickSendMessageButton}
           disabled={this.props.disabled || !!this.props.contact.optOut}
-          style={{
-            width: "70%"
-          }}
+          className={css(flexStyles.sendButton)}
           color="primary"
           variant="contained"
+          endIcon={<IconSend size={18} stroke={layout.iconStroke} />}
         >
-          &crarr; Send
+          Send
         </Button>
         {this.renderNeedsResponseToggleButton(contact)}
       </div>
@@ -1127,7 +1102,6 @@ export class AssignmentTexterContactControls extends React.Component {
     // TODO: max height
     return (
       <div className={css(flexStyles.sectionSideBox)}>
-        <div className={css(flexStyles.sectionSideBoxHeader)} />
         <div className={css(flexStyles.sectionSideBoxContent)}>
           {sideboxList}
         </div>
@@ -1151,12 +1125,6 @@ export class AssignmentTexterContactControls extends React.Component {
           key="messageScrollContainer"
           ref="messageScrollContainer"
           className={css(flexStyles.sectionMessageThread)}
-          style={{
-            backgroundColor:
-              this.props.muiTheme.palette.type === "light"
-                ? "#f0f0f0"
-                : palette.dark[8]
-          }}
         >
           {internalComponent}
         </div>
@@ -1182,10 +1150,12 @@ export class AssignmentTexterContactControls extends React.Component {
     if (window.DOWNTIME_NO_INITIAL) {
       return [
         this.renderToolbar(enabledSideboxes),
-        <div>
-          Sending initial messages is currently paused. You can still reply to
-          any incoming messages.
-        </div>
+        <Empty
+          key="downtime"
+          title="First messages are paused"
+          content="You can still reply to people who have texted back."
+          icon={<CreateIcon />}
+        />
       ];
     }
     return [
@@ -1195,18 +1165,20 @@ export class AssignmentTexterContactControls extends React.Component {
         campaignContact={this.props.contact}
         campaign={this.props.campaign}
         navigationToolbarChildren={this.props.navigationToolbarChildren}
-        toggleContactList={() =>
-          this.setState({ contactListOpen: !this.state.contactListOpen })
-        }
       />,
       this.renderMessageBox(
         <Empty
           title={
             contact.optOut
-              ? `${contact.firstName} is opted out -- skip this contact`
-              : `This is your first message to ${contact.firstName}`
+              ? `${contact.firstName} opted out`
+              : `Your first message to ${contact.firstName}`
           }
-          icon={<CreateIcon color="primary" />}
+          content={
+            contact.optOut
+              ? "Skip this contact: they won't get any more texts."
+              : "Read the message below, then send it."
+          }
+          icon={<CreateIcon />}
         />,
         enabledSideboxes
       ),
@@ -1238,6 +1210,7 @@ export class AssignmentTexterContactControls extends React.Component {
                 campaign={this.props.campaign}
                 navigationToolbarChildren={this.props.navigationToolbarChildren}
                 toggleContactList={this.toggleContactList}
+                contactListOpen={!!this.state.contactListOpen}
               />
               {this.renderMessageBox(
                 <MessageList
@@ -1255,19 +1228,7 @@ export class AssignmentTexterContactControls extends React.Component {
             </div>
           </div>
         ];
-    return (
-      <div
-        className={css(flexStyles.topContainer)}
-        style={{
-          backgroundColor:
-            this.props.muiTheme.palette.type === "light"
-              ? "#d6d7df"
-              : palette.dark[9]
-        }}
-      >
-        {content}
-      </div>
-    );
+    return <div className={css(flexStyles.topContainer)}>{content}</div>;
   }
 }
 

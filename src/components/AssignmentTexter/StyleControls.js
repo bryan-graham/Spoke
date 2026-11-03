@@ -1,43 +1,45 @@
 import { StyleSheet, css } from "aphrodite";
-import { v } from "../../styles/shore-tokens";
+import { v, layout } from "../../styles/shore-tokens";
 
-const bgGrey = "rgb(214, 215, 223)";
+// The conversation, in Shore's style: the contact's messages on the left in a
+// quiet grey bubble, the texter's on the right in the primary navy. Colours
+// that depend on the theme (primary) are set in MessageList.
+const bubble = {
+  width: "fit-content",
+  maxWidth: "min(520px, 80%)",
+  padding: "8px 14px",
+  marginBottom: 10,
+  borderRadius: 16,
+  fontSize: 15,
+  lineHeight: 1.45,
+  overflowWrap: "anywhere",
+  whiteSpace: "pre-wrap"
+};
 
 export const messageListStyles = {
   // passesd directly to <MessageList>
   messageList: {
     overflow: "hidden",
-    overflow: "-moz-scrollbars-vertical",
-    padding: 8,
+    padding: "20px 20px 8px",
     display: "flex",
     flexDirection: "column",
-    width: "100%"
+    width: "100%",
+    boxSizing: "border-box"
   },
   messageSent: {
+    ...bubble,
     textAlign: "left",
     alignSelf: "flex-end",
-    marginLeft: "20%",
-    marginRight: "10px",
-    backgroundColor: v("surface"),
-    color: v("text"),
-    borderRadius: "16px",
-    marginBottom: "10px",
-    fontSize: "95%",
-    width: "fit-content",
-    maxWidth: "500px"
+    marginLeft: "15%",
+    borderBottomRightRadius: 4
   },
   messageReceived: {
+    ...bubble,
     alignSelf: "flex-start",
-    marginRight: "20%",
-    marginLeft: "10px",
-    color: "white",
-    backgroundColor: "hsla(206, 99%, 31%, 0.74)", //#01579B",
-    borderRadius: "16px",
-    fontSize: "110%",
-    lineHeight: "120%",
-    marginBottom: "10px",
-    width: "fit-content",
-    maxWidth: "500px"
+    marginRight: "15%",
+    borderBottomLeftRadius: 4,
+    color: v("text"),
+    backgroundColor: v("subtle")
   }
 };
 
@@ -55,7 +57,7 @@ export const inlineStyles = {
   },
   flatButtonLabel: {
     textTransform: "none",
-    fontWeight: "bold"
+    fontWeight: 600
   }
 };
 
@@ -71,6 +73,8 @@ export const flexStyles = StyleSheet.create({
     flexDirection: "column",
     //messages can be scrolled through and height/width is responsive
     height: "100%",
+    backgroundColor: v("panel"),
+    color: v("text"),
     "@media(max-width: 420px)": {
       fontFamily: '"Inter Variable", Inter, sans-serif'
     }
@@ -115,13 +119,12 @@ export const flexStyles = StyleSheet.create({
       display: "none"
     }
   },
-  sectionSideBoxHeader: {
-    height: 56,
-    backgroundColor: "rgba(126, 128, 139, .7)"
-  },
   sectionSideBoxContent: {
-    padding: 24,
-    borderLeft: `1px solid ${v("border")}`
+    minHeight: "100%",
+    boxSizing: "border-box",
+    padding: 20,
+    backgroundColor: v("canvas"),
+    borderLeft: `1px solid ${v("panelBorder")}`
   },
   superSectionMessageBox: {
     height: "100%",
@@ -144,12 +147,15 @@ export const flexStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-start",
     flex: "1 1 auto",
-    overflowY: "scroll"
+    overflowY: "scroll",
+    backgroundColor: v("panel")
   },
   sectionLeftSideBox: {
     flex: "1 0 260px",
     maxWidth: 260,
-    overflow: "hidden scroll"
+    overflow: "hidden scroll",
+    backgroundColor: v("canvas"),
+    borderRight: `1px solid ${v("panelBorder")}`
   },
   superSectionMessagePage: {
     display: "flex",
@@ -160,13 +166,15 @@ export const flexStyles = StyleSheet.create({
     display: "flex",
     flexDirection: "column",
     flexGrow: 1,
+    // let it shrink to the window on phones (flex children default to their
+    // content's width)
+    minWidth: 0,
     maxHeight: "100%"
   },
   /// * Section OptOut Dialog
   sectionOptOutDialog: {
-    padding: "4px 10px 9px 10px",
+    margin: "12px 16px 16px",
     zIndex: 2000,
-    backgroundColor: v("surface"),
     overflow: "visible",
     "@media (hover: hover) and (pointer: fine)": {
       // for touchpads and phones, the edge of the tablet is easier
@@ -174,18 +182,28 @@ export const flexStyles = StyleSheet.create({
       maxWidth: "554px"
     }
   },
+  optOutDialogContent: {
+    paddingTop: 0
+  },
+  optOutChoices: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12
+  },
   subSectionOptOutDialogActions: {
-    marginTop: 20,
+    marginTop: 16,
     display: "flex",
     flexDirection: "row",
-    justifyContent: "flex-end"
+    justifyContent: "flex-end",
+    gap: 8
   },
   /// * Section Texting Input Field
   sectionMessageField: {
     // messageField
-    flex: "0 0 20px",
-    padding: "0px 16px",
-    marginBottom: "8px"
+    flex: "0 0 auto",
+    padding: "16px 16px 0",
+    borderTop: `1px solid ${v("panelBorder")}`
   },
   subSectionMessageFieldTextField: {
     "@media(max-width: 420px)": {
@@ -202,7 +220,7 @@ export const flexStyles = StyleSheet.create({
     // flexWrap: "wrap",
     overflow: "hidden",
     position: "relative",
-    paddingLeft: 12
+    padding: "0 16px"
   },
   subButtonsAnswerButtons: {
     flex: "1 1 auto", // keeps bottom buttons in place
@@ -210,12 +228,14 @@ export const flexStyles = StyleSheet.create({
     //   during the inflection point of showing the shortcut-buttons
     //   without the height, the exit buttons get pushed down oddly
     // internal:
-    margin: "9px 0px 0px 9px",
+    margin: "10px 0 0",
     width: "100%"
     // similar to 572 below, but give room for other shortcut-buttons
   },
   subSubButtonsAnswerButtonsCurrentQuestion: {
-    marginBottom: "12px",
+    marginBottom: "8px",
+    fontSize: 13,
+    color: v("dimmed"),
     //flex: "0 0 auto",
     width: "100%",
     // for mobile:
@@ -233,17 +253,12 @@ export const flexStyles = StyleSheet.create({
     position: "relative"
   },
   subButtonsExitButtons: {
-    // next/prev/skip/optout
-    // width: "100%", default is better on mobile
-    height: "40px",
-    margin: "9px",
-    // default works better for mobile right margin
-    // flex: "0 0 40px",
-    // internal:
+    // all responses on the left, opt out on the right
     display: "flex",
-    flexDirection: "column",
-    flexWrap: "wrap",
-    alignContent: "space-between",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+    margin: "10px 0 0",
     // to 'win' against absoslute positioned content above it:
     zIndex: "10",
     "@media (hover: hover) and (pointer: fine)": {
@@ -254,33 +269,32 @@ export const flexStyles = StyleSheet.create({
   },
   /// * Section Send Button
   sectionSend: {
-    //sendButtonWrapper
-    height: "72px",
-    flex: `0 0 auto`,
+    flex: "0 0 auto",
     display: "flex",
-    flexDirection: "column",
-    flexWrap: "wrap",
-    alignContent: "space-between",
-    padding: "9px 9px 9px 21px",
+    alignItems: "stretch",
+    gap: 8,
+    padding: "12px 16px 16px",
     "@media (hover: hover) and (pointer: fine)": {
       // for touchpads and phones, the edge of the tablet is easier
       // vs for desktops, we want to maximize how far the mouse needs to travel
       maxWidth: "554px"
     }
   },
-  subSectionSendButton: {
+  sendButton: {
     flex: "1 1 auto",
-    width: "70%",
-    height: "100%",
-    //borderRadius: "0px",
-    color: "white"
+    height: 40
+  },
+  secondaryAction: {
+    flex: "0 0 auto",
+    minWidth: 96,
+    height: 40
   },
   flatButton: {
     height: "40px",
     border: `1px solid ${v("border")}`,
     // FlatButton property, setting here, overrides hover
     // backgroundColor: "white",
-    borderRadius: "0",
+    borderRadius: layout.controlRadius,
     boxShadow: "none",
     maxWidth: "300px",
     "@media(max-width: 450px)": {
