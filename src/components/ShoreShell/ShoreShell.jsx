@@ -74,7 +74,7 @@ const useStyles = makeStyles({
     display: "flex",
     alignItems: "center",
     gap: 12,
-    padding: "4px 6px 18px"
+    padding: "4px 6px 24px"
   },
   tile: {
     flexShrink: 0,
@@ -106,8 +106,7 @@ const useStyles = makeStyles({
     overflowY: "auto",
     display: "flex",
     flexDirection: "column",
-    gap: 2,
-    padding: "0 2px"
+    gap: 2
   },
   groupLabel: {
     fontSize: 12,
