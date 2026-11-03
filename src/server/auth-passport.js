@@ -2,7 +2,14 @@ import passport from "passport";
 import Auth0Strategy from "passport-auth0";
 import { Strategy as LocalStrategy } from "passport-local";
 import slack from "@aoberoi/passport-slack";
-import { User, UserOrganization, Organization, cacheableData } from "./models";
+import {
+  User,
+  UserOrganization,
+  Organization,
+  cacheableData,
+  r
+} from "./models";
+import { ROLE_HIERARCHY } from "../lib/permissions";
 import localAuthHelpers from "./local-auth-helpers";
 import wrap from "./wrap";
 import { capitalizeWord } from "./api/lib/utils";
@@ -142,6 +149,95 @@ export function setupLocalAuthPassport() {
     ]
   };
 }
+// Signs in a person from a token (PASSPORT_STRATEGY=token, e.g. from Shore):
+// finds or creates the user, then, if the token asserts organization roles
+// (user_organizations: [{ organization_id, role }]), adds the user to those
+// organizations and syncs their roles.
+//
+// Organizations that don't exist in this Spoke (for example on a brand-new
+// Spoke, before its first organization is created) and invalid roles are
+// skipped, so sign-in still succeeds and the person can continue, e.g. to an
+// invite link that creates the organization.
+export async function tokenLogin(jwt_payload) {
+  const users = await User.filter({ email: jwt_payload.sub });
+  let user = users[0];
+  if (!user) {
+    const userData = {
+      auth0_id: ["token", jwt_payload.sub].join("|"),
+      email: jwt_payload.email || jwt_payload.sub,
+      first_name: "",
+      last_name: "",
+      cell: jwt_payload.cell || jwt_payload.phone || "",
+      is_superadmin: false
+    };
+    if (jwt_payload.name) {
+      const fullNameSplit = jwt_payload.name.split(" ");
+      userData.first_name = fullNameSplit[0];
+      userData.last_name =
+        fullNameSplit.length > 1 ? fullNameSplit.slice(1).join(" ") : "";
+    }
+    user = await User.save(userData);
+  }
+
+  if (!Array.isArray(jwt_payload.user_organizations)) {
+    // The token makes no assertions about roles, so leave them as they are.
+    return user;
+  }
+
+  const asserted = jwt_payload.user_organizations.filter(
+    uo =>
+      uo &&
+      /^\d{1,10}$/.test(String(uo.organization_id)) &&
+      ROLE_HIERARCHY.includes(uo.role)
+  );
+  const assertedIds = asserted.map(uo => Number(uo.organization_id));
+  const existingOrgIds = assertedIds.length
+    ? (
+        await r
+          .knex("organization")
+          .whereIn("id", assertedIds)
+          .select("id")
+      ).map(org => Number(org.id))
+    : [];
+  const skipped = jwt_payload.user_organizations.length - asserted.length;
+  const missing = assertedIds.filter(id => !existingOrgIds.includes(id));
+  if (skipped || missing.length) {
+    console.warn(
+      "token login: skipped organization roles",
+      JSON.stringify({ invalid: skipped, missingOrganizationIds: missing })
+    );
+  }
+  const valid = asserted.filter(uo =>
+    existingOrgIds.includes(Number(uo.organization_id))
+  );
+
+  const userOrgs = await UserOrganization.filter({ user_id: user.id });
+  const inDatabase = userOrgs.map(uo => Number(uo.organization_id));
+
+  // Add the user to asserted organizations they're not in yet.
+  for (const uo of valid) {
+    if (!inDatabase.includes(Number(uo.organization_id))) {
+      await UserOrganization.save({
+        user_id: user.id,
+        organization_id: Number(uo.organization_id),
+        role: uo.role
+      });
+    }
+  }
+  // Sync the role in organizations they're already in. Role is the only
+  // thing that can be updated.
+  for (const userOrg of userOrgs) {
+    const match = valid.find(
+      uo => Number(uo.organization_id) === Number(userOrg.organization_id)
+    );
+    if (match && userOrg.role !== match.role) {
+      userOrg.role = match.role;
+      await userOrg.save();
+    }
+  }
+  return user;
+}
+
 export function setupTokenPassport(app) {
   var opts = {};
 
@@ -157,78 +253,16 @@ export function setupTokenPassport(app) {
 
   passport.use(
     "token",
-    new JwtStrategy(opts, async function(jwt_payload, done) {
-      User.filter({ email: jwt_payload.sub })
-        .then(users => {
-          if (users.length === 0) {
-            const userData = {
-              auth0_id: ["token", jwt_payload.sub].join("|"),
-              email: jwt_payload.email || jwt_payload.sub,
-              first_name: "",
-              last_name: "",
-              cell: jwt_payload.cell || jwt_payload.phone || "",
-              is_superadmin: false
-            };
-
-            if (jwt_payload.name) {
-              const fullNameSplit = jwt_payload.name.split(" ");
-              userData.first_name = fullNameSplit[0];
-              userData.last_name =
-                fullNameSplit.length > 1
-                  ? fullNameSplit.slice(1).join(" ")
-                  : "";
-            }
-
-            return User.save(userData);
-          }
-
-          return users[0];
-        })
-        .then(user => {
-          UserOrganization.filter({ user_id: user.id }).then(userOrgs => {
-            if (typeof jwt_payload.user_organizations === "undefined") {
-              // JWT does not contain any assertions about user roles
-              // so leaving that up to whatever the user has configured
-
-              done(null, user);
-              return;
-            }
-
-            const jwtUserOrgs = jwt_payload.user_organizations || [];
-            const userOrgIdsInDatabase = userOrgs.map(
-              existing => existing.organization_id
-            );
-            const userOrgIdsInAssertion = jwtUserOrgs.map(
-              asserted => asserted.organization_id
-            );
-
-            // Adding user to orgs based on jwt
-            const createPromises = jwtUserOrgs
-              .filter(uo => !userOrgIdsInDatabase.includes(uo.organization_id))
-              .map(asserted => ({
-                user_id: user.id,
-                organization_id: asserted.organization_id,
-                role: asserted.role
-              }))
-              .map(userOrg => UserOrganization.save(userOrg));
-
-            // Syncing roles in orgs that match both
-            const updatePromises = userOrgs
-              .filter(uo => userOrgIdsInAssertion.includes(uo.organization_id))
-              .map(userOrg => {
-                const { role } = jwtUserOrgs.find(
-                  a => a.organization_id == userOrg.organization_id
-                );
-                // Role is the only thing that can be updated
-                userOrg.role = role;
-
-                return userOrg.save();
-              });
-
-            Promise.all([...createPromises, ...updatePromises]).then(() =>
-              done(null, user)
-            );
-          });
+    new JwtStrategy(opts, function(jwt_payload, done) {
+      tokenLogin(jwt_payload)
+        .then(user => done(null, user))
+        .catch(err => {
+          // Fail this sign-in, never the whole server.
+          console.error(
+            "token login failed",
+            JSON.stringify({ name: err && err.name, code: err && err.code })
+          );
+          done(err);
         });
     })
   );
