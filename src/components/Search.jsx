@@ -1,6 +1,17 @@
 import PropTypes from "prop-types";
 import React from "react";
 import SearchBar from "material-ui-search-bar";
+import { v } from "../styles/shore-tokens";
+
+// Shore's search field: round, bordered, on the input colour.
+const SEARCH_STYLE = {
+  borderRadius: 999,
+  boxShadow: "none",
+  border: `1px solid ${v("border")}`,
+  backgroundColor: v("input"),
+  height: 44,
+  paddingLeft: 8
+};
 
 class Search extends React.Component {
   constructor(props) {
@@ -34,6 +45,7 @@ class Search extends React.Component {
       onCancelSearch={this.onCancelSearch}
       value={this.props.searchString}
       placeholder={this.props.hintText || this.props.placeholder}
+      style={SEARCH_STYLE}
     />
   );
 }

@@ -6,9 +6,12 @@ import Form from "react-formal";
 
 import MUIDataTable from "mui-datatables";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import AddIcon from "@material-ui/icons/Add";
 import DeleteIcon from "@material-ui/icons/Delete";
-import Fab from "@material-ui/core/Fab";
+import { IconPlus } from "@tabler/icons-react";
+import {
+  PageActions,
+  PageDescription
+} from "../components/ShoreShell/PageHeader";
 import Button from "@material-ui/core/Button";
 import IconButton from "@material-ui/core/IconButton";
 import Dialog from "@material-ui/core/Dialog";
@@ -26,7 +29,6 @@ import InputLabel from "@material-ui/core/InputLabel";
 import GSForm from "../components/forms/GSForm";
 import GSSubmitButton from "../components/forms/GSSubmitButton";
 import GSTextField from "../components/forms/GSTextField";
-import theme from "../styles/theme";
 import { dataTest } from "../lib/attributes";
 import loadData from "./hoc/load-data";
 
@@ -378,14 +380,17 @@ class AdminPhoneNumberInventory extends React.Component {
         />
 
         {this.props.params.ownerPerms ? (
-          <Fab
-            {...dataTest("buyPhoneNumbers")}
-            color="primary"
-            style={theme.components.floatingButton}
-            onClick={this.handleBuyNumbersOpen}
-          >
-            <AddIcon />
-          </Fab>
+          <PageActions>
+            <Button
+              {...dataTest("buyPhoneNumbers")}
+              variant="contained"
+              color="primary"
+              startIcon={<IconPlus size={18} stroke={1.7} />}
+              onClick={this.handleBuyNumbersOpen}
+            >
+              Buy numbers
+            </Button>
+          </PageActions>
         ) : null}
 
         <Dialog
