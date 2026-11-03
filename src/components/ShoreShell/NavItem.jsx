@@ -9,11 +9,14 @@ import { dataTest } from "../../lib/attributes";
 
 const useStyles = makeStyles({
   row: {
+    // Matches Shore's nav rows (Mantine NavLink): 40px rows 4px apart,
+    // 12px between icon and label.
     display: "flex",
     alignItems: "center",
-    gap: 10,
-    minHeight: 36,
-    padding: "0 10px",
+    gap: 12,
+    minHeight: 40,
+    marginBottom: 4,
+    padding: "0 12px",
     borderRadius: layout.controlRadius,
     color: v("navText"),
     fontSize: 14,
@@ -28,8 +31,9 @@ const useStyles = makeStyles({
   },
   sub: {
     marginLeft: 20,
-    minHeight: 32,
-    gap: 8,
+    minHeight: 34,
+    marginBottom: 2,
+    gap: 10,
     fontSize: 13
   },
   active: {
