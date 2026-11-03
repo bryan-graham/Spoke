@@ -77,6 +77,12 @@ function cleanItem(item) {
   return out;
 }
 
+// { light, dark } image addresses, each null when Shore has no such version.
+function cleanLogo(logo) {
+  const value = logo && typeof logo === "object" ? logo : {};
+  return { light: httpUrl(value.light), dark: httpUrl(value.dark) };
+}
+
 export function cleanMenu(raw) {
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.groups)) {
     return null;
@@ -84,7 +90,13 @@ export function cleanMenu(raw) {
   const org = raw.org && typeof raw.org === "object" ? raw.org : {};
   const user = raw.user && typeof raw.user === "object" ? raw.user : {};
   return {
-    org: { slug: str(org.slug, 128), name: str(org.name, 120) },
+    org: {
+      slug: str(org.slug, 128),
+      name: str(org.name, 120),
+      // The campaign logo addresses that load without a Shore sign-in.
+      // (org.logo is Shore's own copy, which needs one, so it isn't passed.)
+      publicLogo: cleanLogo(org.publicLogo)
+    },
     user: {
       name: str(user.name, 120),
       email: str(user.email, 254),

@@ -74,7 +74,7 @@ export default function renderIndex(html, css, assetMap) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-    <title>Spoke</title>
+    <title>${branding ? "Shore • Texting" : "Spoke"}</title>
     ${externalLinks}
     <script>
       // Start in the right colour scheme before the app loads (keys from

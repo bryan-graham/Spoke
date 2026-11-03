@@ -128,3 +128,14 @@ describe("renderIndex favicon", () => {
     expect(html).toContain('window.SHORE_LOGO_URL=""');
   });
 });
+
+describe("renderIndex title", () => {
+  it("says Spoke when not set up for Shore", () => {
+    const html = renderIndex(
+      "",
+      { content: "", renderedClassNames: "" },
+      { "bundle.js": "" }
+    );
+    expect(html).toContain("<title>Spoke</title>");
+  });
+});

@@ -14,6 +14,7 @@ import ShoreWordmark from "./ShoreWordmark";
 import useShoreMenu from "./useShoreMenu";
 import { buildNav, monogram } from "./buildNav";
 import { ColorSchemeContext } from "../ColorScheme";
+import { pickLogo, isWordmark, useImageShape, pageTitle } from "./brand";
 
 // The Shore shell (docs/shore-design-guide.md, "Layout"): one canvas
 // background shared by the sidebar and the area around a raised page panel.
@@ -173,9 +174,53 @@ const useStyles = makeStyles({
   }
 });
 
-export function CampaignBrand({ name, small }) {
+export function CampaignBrand({ name, small, logoUrl }) {
   const classes = useStyles();
   const size = small ? 32 : 46;
+  const shape = useImageShape(logoUrl);
+  if (shape.status === "ready" && isWordmark(shape.ratio)) {
+    // A wide wordmark stands alone (it already says the name).
+    return (
+      <div className={classes.brand} style={small ? { padding: 0 } : undefined}>
+        <img
+          src={logoUrl}
+          alt={name}
+          style={{
+            display: "block",
+            height: small ? 28 : 56,
+            maxWidth: small ? 180 : 220,
+            objectFit: "contain",
+            objectPosition: "left center"
+          }}
+        />
+      </div>
+    );
+  }
+  if (shape.status === "ready") {
+    // A square logo sits beside the name.
+    return (
+      <div className={classes.brand} style={small ? { padding: 0 } : undefined}>
+        <img
+          src={logoUrl}
+          alt=""
+          style={{
+            width: size,
+            height: size,
+            borderRadius: 10,
+            objectFit: "contain",
+            flexShrink: 0
+          }}
+        />
+        <div
+          className={classes.brandName}
+          style={{ fontSize: small ? 14 : 17 }}
+        >
+          {name}
+        </div>
+      </div>
+    );
+  }
+  // No logo (or it failed to load): the campaign's initials.
   return (
     <div className={classes.brand} style={small ? { padding: 0 } : undefined}>
       <div
@@ -192,11 +237,16 @@ export function CampaignBrand({ name, small }) {
   );
 }
 
-CampaignBrand.propTypes = { name: PropTypes.string, small: PropTypes.bool };
+CampaignBrand.propTypes = {
+  name: PropTypes.string,
+  small: PropTypes.bool,
+  logoUrl: PropTypes.string
+};
 
 export function SidebarContent({
   groups,
   brandName,
+  brandLogo,
   showBrand,
   organizationId,
   onNavigate,
@@ -205,7 +255,9 @@ export function SidebarContent({
   const classes = useStyles();
   return (
     <>
-      {showBrand && brandName ? <CampaignBrand name={brandName} /> : null}
+      {showBrand && brandName ? (
+        <CampaignBrand name={brandName} logoUrl={brandLogo} />
+      ) : null}
       <nav className={classes.nav} aria-label="Main">
         {groups.map((group, i) => (
           <div key={`${group.label || "group"}-${i}`}>
@@ -244,6 +296,7 @@ export function SidebarContent({
 SidebarContent.propTypes = {
   groups: PropTypes.array.isRequired,
   brandName: PropTypes.string,
+  brandLogo: PropTypes.string,
   showBrand: PropTypes.bool,
   organizationId: PropTypes.string,
   onNavigate: PropTypes.func,
@@ -262,7 +315,7 @@ export default function ShoreShell({
   const { menu: shoreMenu, loaded: shoreMenuLoaded } = useShoreMenu(
     organizationId
   );
-  const { setShorePreference } = useContext(ColorSchemeContext);
+  const { setShorePreference, scheme } = useContext(ColorSchemeContext);
   // Follow the person's Shore colour scheme while Shore's menu is available;
   // once it's known there's no menu, go back to Spoke's own setting.
   const shoreColorScheme =
@@ -299,11 +352,23 @@ export default function ShoreShell({
     (shoreMenu && shoreMenu.org && shoreMenu.org.name) ||
     (data && data.organization && data.organization.name) ||
     "";
+  const brandLogo =
+    pickLogo(shoreMenu && shoreMenu.org && shoreMenu.org.publicLogo, scheme) ||
+    undefined;
+
+  // Connected to Shore: "Graham for Providence • Shore • Texting".
+  const shoreOrgName = (shoreMenu && shoreMenu.org && shoreMenu.org.name) || "";
+  useEffect(() => {
+    if (shoreMenu && typeof document !== "undefined") {
+      document.title = pageTitle(shoreOrgName);
+    }
+  }, [shoreMenu, shoreOrgName]);
 
   const sidebar = (
     <SidebarContent
       groups={groups}
       brandName={brandName}
+      brandLogo={brandLogo}
       showBrand={!isPhone}
       organizationId={organizationId}
       onNavigate={isPhone ? () => setDrawerOpen(false) : undefined}
@@ -335,7 +400,9 @@ export default function ShoreShell({
             >
               <IconMenu2 size={22} stroke={layout.iconStroke} />
             </IconButton>
-            {brandName ? <CampaignBrand name={brandName} small /> : null}
+            {brandName ? (
+              <CampaignBrand name={brandName} logoUrl={brandLogo} small />
+            ) : null}
           </div>
         ) : null}
         <main
