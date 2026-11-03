@@ -1,4 +1,5 @@
 import auth0 from "auth0-js";
+import { clearMenuCache } from "../components/ShoreShell/menuCache";
 
 const baseURL = `${window.location.protocol}//${window.location.host}`;
 
@@ -70,6 +71,8 @@ const loginStrategies = {
 };
 
 export function logout() {
+  // Forget this person's remembered Shore menu (shared computers).
+  clearMenuCache();
   loginStrategies[window.PASSPORT_STRATEGY].logout();
 }
 

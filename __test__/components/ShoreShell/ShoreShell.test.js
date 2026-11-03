@@ -89,18 +89,21 @@ const flush = async () => {
 
 let setShorePreference;
 
-const render = async ({ roles, menu, path }) => {
+const render = async ({ roles, menu, path, pending }) => {
   setShorePreference = jest.fn();
   global.fetch = jest.fn(() =>
-    Promise.resolve(
-      menu
-        ? { ok: true, json: () => Promise.resolve(menu) }
-        : {
-            ok: false,
-            json: () => Promise.resolve({ error: "not_configured" })
-          }
-    )
+    pending
+      ? new Promise(() => {})
+      : Promise.resolve(
+          menu
+            ? { ok: true, json: () => Promise.resolve(menu) }
+            : {
+                ok: false,
+                json: () => Promise.resolve({ error: "not_configured" })
+              }
+        )
   );
+
   let wrapper;
   await act(async () => {
     wrapper = mount(
@@ -140,6 +143,7 @@ const navLabels = wrapper =>
 describe("ShoreShell", () => {
   afterEach(() => {
     delete global.fetch;
+    window.localStorage.clear();
   });
 
   it("renders the page inside the panel, with the campaign brand", async () => {
