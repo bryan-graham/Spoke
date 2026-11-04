@@ -4,7 +4,7 @@ import { gql, useQuery } from "@apollo/client";
 import { makeStyles } from "@material-ui/core/styles";
 import useMediaQuery from "@material-ui/core/useMediaQuery";
 import Drawer from "@material-ui/core/Drawer";
-import { IconMenu2 } from "@tabler/icons-react";
+import { IconMenu2, IconX } from "@tabler/icons-react";
 import { hasRole } from "../../lib/permissions";
 import { v, shared, layout, fonts } from "../../styles/shore-tokens";
 import UserMenu from "../../containers/UserMenu";
@@ -127,41 +127,31 @@ const useStyles = makeStyles({
     gap: 10
   },
   mark: { padding: "0 8px" },
+  // The phone top bar is one tap target that opens and closes the menu.
+  // It stays above the open menu (which starts below it), so it can close it.
   topBar: {
     position: "sticky",
     top: 0,
-    zIndex: 10,
+    zIndex: 1301, // above the menu drawer (MUI drawer: 1200)
     height: layout.phoneTopBar,
     display: "flex",
     alignItems: "center",
-    gap: 8,
-    width: "100%",
-    padding: "0 8px",
-    border: "none",
-    margin: 0,
-    font: "inherit",
-    color: v("text"),
-    textAlign: "left",
-    cursor: "pointer",
+    gap: 12,
+    padding: "0 16px",
     backgroundColor: v("canvas"),
+    cursor: "pointer",
+    userSelect: "none",
     WebkitTapHighlightColor: "transparent",
     "&:focus-visible": {
       outline: `2px solid ${v("primary")}`,
       outlineOffset: -2
     },
-    "&:active $menuIcon": { backgroundColor: v("navHover") },
     "@media print": { display: "none" }
   },
-  // looks like the icon button it replaces
-  menuIcon: {
-    width: 48,
-    height: 48,
-    flex: "0 0 48px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "50%",
-    color: v("dimmed")
+  topBarIcon: { display: "flex", color: v("text") },
+  drawerBelowBar: {
+    top: layout.phoneTopBar,
+    height: `calc(100% - ${layout.phoneTopBar}px)`
   },
   main: {
     flex: 1,
@@ -427,7 +417,11 @@ export default function ShoreShell({
           <Drawer
             open={drawerOpen}
             onClose={() => setDrawerOpen(false)}
-            classes={{ paper: classes.drawerPaper }}
+            classes={{
+              paper: `${classes.drawerPaper} ${classes.drawerBelowBar}`
+            }}
+            // Let taps on the top bar (outside the drawer) reach it.
+            ModalProps={{ disableEnforceFocus: true, keepMounted: true }}
           >
             <div className={classes.sidebar} style={{ position: "static" }}>
               {sidebar}
@@ -438,22 +432,31 @@ export default function ShoreShell({
         )}
         <div className={classes.main}>
           {isPhone ? (
-            // The whole bar (menu icon, logo and name) opens and closes
-            // the menu, so it's an easy target on a phone.
-            <button
-              type="button"
+            <div
               className={classes.topBar}
+              role="button"
+              tabIndex={0}
               aria-label={drawerOpen ? "Close menu" : "Open menu"}
               aria-expanded={drawerOpen}
               onClick={() => setDrawerOpen(!drawerOpen)}
+              onKeyDown={event => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setDrawerOpen(!drawerOpen);
+                }
+              }}
             >
-              <span className={classes.menuIcon} aria-hidden>
-                <IconMenu2 size={22} stroke={layout.iconStroke} />
+              <span className={classes.topBarIcon} aria-hidden>
+                {drawerOpen ? (
+                  <IconX size={22} stroke={layout.iconStroke} />
+                ) : (
+                  <IconMenu2 size={22} stroke={layout.iconStroke} />
+                )}
               </span>
               {brandName ? (
                 <CampaignBrand name={brandName} logoUrl={brandLogo} small />
               ) : null}
-            </button>
+            </div>
           ) : null}
           <main
             className={`${classes.panel} ${isPhone ? classes.panelPhone : ""}`}
