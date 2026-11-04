@@ -14,6 +14,21 @@ import GSSubmitButton from "../../components/forms/GSSubmitButton";
 import Snackbar from "@material-ui/core/Snackbar";
 import Alert from "@material-ui/lab/Alert";
 
+const COLOURS = [
+  ["primary", "Primary"],
+  ["secondary", "Secondary"],
+  ["info", "Info"],
+  ["success", "Success"],
+  ["warning", "Warning"],
+  ["error", "Error"]
+];
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+  columnGap: 16
+};
+
 const ThemeEditor = props => {
   const palette = props.muiTheme.palette;
 
@@ -78,7 +93,6 @@ const ThemeEditor = props => {
 
   return (
     <React.Fragment>
-      <h2>Theme</h2>
       <GSForm
         schema={themeFormSchema}
         onChange={model => setModel(model)}
@@ -99,38 +113,24 @@ const ThemeEditor = props => {
           });
         }}
       >
-        <Form.Field
-          as={GSColorPicker}
-          label="Primary"
-          name="primary"
-          fullWidth
-        />
-        <Form.Field
-          as={GSColorPicker}
-          label="Secondary"
-          name="secondary"
-          fullWidth
-        />
-        <Form.Field as={GSColorPicker} label="Info" name="info" fullWidth />
-        <Form.Field
-          as={GSColorPicker}
-          label="Success"
-          name="success"
-          fullWidth
-        />
-        <Form.Field
-          as={GSColorPicker}
-          label="Warning"
-          name="warning"
-          fullWidth
-        />
-        <Form.Field as={GSColorPicker} label="Error" name="error" fullWidth />
-
-        <Form.Submit
-          as={GSSubmitButton}
-          label="Save Theme"
-          disabled={!themeFormSchema.isValidSync(model)}
-        />
+        <div style={grid}>
+          {COLOURS.map(([name, label]) => (
+            <Form.Field
+              key={name}
+              as={GSColorPicker}
+              label={label}
+              name={name}
+              fullWidth
+            />
+          ))}
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Form.Submit
+            as={GSSubmitButton}
+            label="Save colours"
+            disabled={!themeFormSchema.isValidSync(model)}
+          />
+        </div>
       </GSForm>
       <Snackbar
         open={saveSuccessful}
@@ -140,7 +140,7 @@ const ThemeEditor = props => {
         }}
       >
         <Alert elevation={6} variant="filled" severity="success">
-          Theme update successful!
+          Colours saved
         </Alert>
       </Snackbar>
     </React.Fragment>

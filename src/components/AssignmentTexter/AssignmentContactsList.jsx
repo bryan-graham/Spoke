@@ -8,10 +8,10 @@ import MenuItem from "@material-ui/core/MenuItem";
 import SearchBar from "material-ui-search-bar";
 import moment from "moment";
 import IconButton from "@material-ui/core/IconButton";
-import FilterListIcon from "@material-ui/icons/FilterList";
+import { IconFilter } from "@tabler/icons-react";
 import Menu from "@material-ui/core/Menu";
 import Pagination from "@material-ui/lab/Pagination";
-import { v } from "../../styles/shore-tokens";
+import { v, layout } from "../../styles/shore-tokens";
 
 const pageSize = 50;
 
@@ -127,31 +127,43 @@ class AssignmentContactsList extends React.Component {
 
   renderContact = contact => {
     const { updateCurrentContactById, currentContact } = this.props;
+    // Shore's nav rows: the current contact gets the current-page row.
+    const current = contact.id === currentContact.id;
+    const needsResponse = contact.messageStatus === "needsResponse";
+    const closed = contact.messageStatus === "closed";
 
     return (
       <ListItem
         key={contact.id}
         id={this.getContactListItemId(contact.id)}
-        selected={contact.id === currentContact.id}
+        selected={current}
         onClick={() => updateCurrentContactById(contact.id)}
         button
+        style={{
+          ...inlineStyles.row,
+          ...(current ? inlineStyles.currentRow : {})
+        }}
       >
         <ListItemText
           primary={this.getContactName(contact)}
           primaryTypographyProps={{
-            color:
-              contact.messageStatus === "closed"
-                ? "textSecondary"
-                : "textPrimary",
             style: {
-              fontWeight:
-                contact.messageStatus === "needsResponse" ? 600 : undefined,
-              fontStyle:
-                contact.messageStatus === "closed" ? "italic" : undefined
+              fontSize: 14,
+              color: current ? "inherit" : closed ? v("dimmed") : v("navText"),
+              fontWeight: needsResponse ? 600 : 500,
+              fontStyle: closed ? "italic" : undefined
             }
           }}
         />
-        <ListItemSecondaryAction style={inlineStyles.updatedAt}>
+        {needsResponse && !current ? (
+          <span style={inlineStyles.needsResponseDot} title="Needs a reply" />
+        ) : null}
+        <ListItemSecondaryAction
+          style={{
+            ...inlineStyles.updatedAt,
+            color: current ? "inherit" : v("dimmed")
+          }}
+        >
           {moment.utc(contact.updatedAt).fromNow()}
         </ListItemSecondaryAction>
       </ListItem>
@@ -197,10 +209,12 @@ class AssignmentContactsList extends React.Component {
           />
           <IconButton
             onClick={this.openFilterMenu}
+            aria-label="Filter contacts"
+            style={{ color: v("dimmed") }}
             aria-controls="contacts-sidebar-status-filter"
             aria-haspopup="true"
           >
-            <FilterListIcon />
+            <IconFilter size={20} stroke={layout.iconStroke} />
           </IconButton>
           <Menu
             id="contacts-sidebar-status-filter"
@@ -254,33 +268,53 @@ const inlineStyles = {
     flexDirection: "column",
     height: "100%"
   },
-  contactsListFilters: {
-    margin: 12,
-    borderRight: `1px solid ${v("border")}`,
-    width: "calc(100% - 24px)"
-  },
   searchBar: {
     display: "flex",
-    backgroundColor: "rgba(126, 128, 139, .7)"
+    alignItems: "center",
+    gap: 4,
+    padding: "12px 8px 8px 12px"
   },
   contactsListSearch: {
-    height: 32,
-    margin: "12px 0 12px 12px"
+    flex: "1 1 auto",
+    height: 36,
+    borderRadius: 999,
+    boxShadow: "none",
+    border: `1px solid ${v("border")}`,
+    backgroundColor: v("input")
   },
   contactListScrollContainer: {
     overflow: "hidden scroll",
-    borderRight: `1px solid ${v("border")}`,
-    height: "100%"
+    height: "100%",
+    padding: "4px 8px 8px"
+  },
+  row: {
+    borderRadius: 8,
+    marginBottom: 2,
+    paddingTop: 6,
+    paddingBottom: 6
+  },
+  currentRow: {
+    backgroundColor: v("navActiveBg"),
+    color: v("navActiveText"),
+    boxShadow: v("navActiveShadow")
+  },
+  needsResponseDot: {
+    width: 8,
+    height: 8,
+    flex: "0 0 8px",
+    borderRadius: "50%",
+    marginLeft: 8,
+    backgroundColor: v("countText")
   },
   updatedAt: {
     fontSize: 12,
-    margin: "0 4px"
+    margin: "0 4px",
+    pointerEvents: "none"
   },
   pagination: {
     display: "flex",
     justifyContent: "center",
-    padding: "12px 0",
-    borderRight: `1px solid ${v("border")}`
+    padding: "12px 0"
   }
 };
 

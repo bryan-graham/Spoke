@@ -2,78 +2,49 @@ import PropTypes from "prop-types";
 import React from "react";
 import { StyleSheet, css } from "aphrodite";
 import momenttz from "moment-timezone";
-import Toolbar from "@material-ui/core/Toolbar";
 import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
-import FaceIcon from "@material-ui/icons/Face";
-import ArrowBackIcon from "@material-ui/icons/ArrowBack";
-import ArrowForwardIcon from "@material-ui/icons/ArrowForward";
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand
+} from "@tabler/icons-react";
+import PersonAvatar from "../PersonAvatar";
+import { headerStyles, iconProps } from "./Toolbar";
+import { v } from "../../styles/shore-tokens";
 import { getLocalTime, getContactTimezone } from "../../lib/timezones";
 import { getProcessEnvDstReferenceTimezone } from "../../lib/tz-helpers";
 
-const inlineStyles = {
-  toolbar: {
-    backgroundColor: "rgb(81, 82, 89)",
-    color: "white",
-    padding: 0,
-    minHeight: "inherit"
-  }
-};
-
+// The contact's header, in Shore's style: a button that shows and hides the
+// contact list (when that's turned on), the person's avatar and first name,
+// their local time and place, and previous/next.
 const styles = StyleSheet.create({
-  grow: {
-    flexGrow: 1
+  bar: {
+    backgroundColor: v("panel"),
+    minHeight: 64
   },
-  titleSmall: {
-    height: "18px",
-    lineHeight: "18px",
-    paddingTop: "4px",
-    paddingRight: "10px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    maxWidth: "95%"
-  },
-  titleBig: {
-    height: "34px",
-    lineHeight: "34px",
-    paddingRight: "10px",
-    fontWeight: "bold",
-    color: "white",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap"
-    // maxWidth: "90%"
-  },
-  contactToolbarIconButton: {
-    padding: "3px",
-    height: "56px",
-    "@media(max-width: 350px)": {
-      width: "50px"
-    }
-  },
-  titleArea: {
-    // give room for the wrench sideboxes icon
-    maxWidth: "calc(100% - 100px)"
-  },
-  contactArea: {
-    // give room for prev/next arrows
-    maxWidth: "calc(100% - 200px)"
+  name: {
+    fontSize: 18,
+    lineHeight: "24px"
   },
   navigation: {
-    flexGrow: 0,
-    flexShrink: 0,
-    display: "flex"
-    // flexDirection: "column",
-    // flexWrap: "wrap"
-  },
-  navigationTitle: {
-    width: "4em",
-    // height: "100%",
-    padding: "6px",
+    flex: "0 0 auto",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    gap: 6
+  },
+  position: {
+    minWidth: "4.5em",
+    textAlign: "center",
+    fontSize: 13,
+    fontWeight: 500,
+    color: v("dimmed"),
+    whiteSpace: "nowrap",
+    fontVariantNumeric: "tabular-nums",
+    "@media(max-width: 350px)": {
+      minWidth: "auto"
+    }
   }
 });
 
@@ -103,11 +74,7 @@ const ContactToolbar = function ContactToolbar(props) {
     }
   }
 
-  let formattedLocation = `${state}`;
-  if (city && state) {
-    formattedLocation = `${formattedLocation}, `;
-  }
-  formattedLocation = `${formattedLocation}${city}`;
+  const formattedLocation = [city, state].filter(Boolean).join(", ");
 
   const campaignTimezone =
     props.campaign.timezone || getProcessEnvDstReferenceTimezone();
@@ -122,34 +89,37 @@ const ContactToolbar = function ContactToolbar(props) {
     "LT"
   ); // format('h:mm a')
 
+  const details = [formattedLocalTime, formattedLocation]
+    .filter(Boolean)
+    .join(" · ");
+  const navButton = css(headerStyles.iconButton, headerStyles.bordered);
+  const ListIcon = props.contactListOpen
+    ? IconLayoutSidebarLeftCollapse
+    : IconLayoutSidebarLeftExpand;
+
   return (
-    <Toolbar style={{ ...inlineStyles.toolbar, backgroundColor: "#7E808B" }}>
-      <Tooltip
-        title={global.ASSIGNMENT_CONTACTS_SIDEBAR ? "Toggle Contact List" : ""}
-      >
-        <IconButton
-          className={css(styles.contactToolbarIconButton)}
-          onClick={() => {
-            global.ASSIGNMENT_CONTACTS_SIDEBAR
-              ? props.toggleContactList()
-              : null;
-          }}
-        >
-          <FaceIcon style={{ width: 42 }} htmlColor="white" />
-        </IconButton>
-      </Tooltip>
-      <div className={css(styles.contactArea)}>
-        <div className={css(styles.titleSmall)} style={{ color: "white" }}>
-          {formattedLocalTime} - {formattedLocation}
-        </div>
-        <div className={css(styles.titleBig)} style={{ fontSize: "24px" }}>
+    <div className={css(headerStyles.bar, styles.bar)}>
+      {global.ASSIGNMENT_CONTACTS_SIDEBAR && props.toggleContactList ? (
+        <Tooltip title="Show or hide the contact list">
+          <IconButton
+            className={css(headerStyles.iconButton)}
+            onClick={props.toggleContactList}
+            aria-label="Show or hide the contact list"
+          >
+            <ListIcon {...iconProps} />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+      <PersonAvatar name={campaignContact.firstName} />
+      <div className={css(headerStyles.titleArea)}>
+        <div className={css(headerStyles.title, styles.name)}>
           {campaignContact.firstName}
         </div>
+        <div className={css(headerStyles.eyebrow)}>{details}</div>
       </div>
 
-      <div className={css(styles.grow)}></div>
-      <div className={css(styles.navigation)} style={{ flexBasis: "130px" }}>
-        <Tooltip title="Previous Contact">
+      <div className={css(styles.navigation)}>
+        <Tooltip title="Previous contact">
           {/*
            *  Tooltips can not wrap buttons that are disabled.
            *  A disabled element does not fire events.
@@ -159,35 +129,30 @@ const ContactToolbar = function ContactToolbar(props) {
             <IconButton
               onClick={navigationToolbarChildren.onPrevious}
               disabled={!navigationToolbarChildren.onPrevious}
-              className={css(styles.contactToolbarIconButton)}
-              style={{ flex: "0 0 56px", width: "45px" }}
+              className={navButton}
+              aria-label="Previous contact"
             >
-              <ArrowBackIcon htmlColor="white" />
+              <IconChevronLeft {...iconProps} />
             </IconButton>
           </span>
         </Tooltip>
-        <div className={css(styles.navigationTitle)}>
+        <div className={css(styles.position)}>
           {navigationToolbarChildren.title}
         </div>
-        <Tooltip title="Next Contact">
-          {/*
-           *  Tooltips can not wrap buttons that are disabled.
-           *  A disabled element does not fire events.
-           *  Tooltip needs to listen to the child element's events to display the title.
-           */}
+        <Tooltip title="Next contact">
           <span>
             <IconButton
               onClick={navigationToolbarChildren.onNext}
               disabled={!navigationToolbarChildren.onNext}
-              className={css(styles.contactToolbarIconButton)}
-              style={{ flex: "0 0 56px", width: "45px" }}
+              className={navButton}
+              aria-label="Next contact"
             >
-              <ArrowForwardIcon htmlColor="white" />
+              <IconChevronRight {...iconProps} />
             </IconButton>
           </span>
         </Tooltip>
       </div>
-    </Toolbar>
+    </div>
   );
 };
 
@@ -195,7 +160,8 @@ ContactToolbar.propTypes = {
   campaignContact: PropTypes.object, // contacts for current assignment
   campaign: PropTypes.object,
   navigationToolbarChildren: PropTypes.object,
-  toggleContactList: PropTypes.func
+  toggleContactList: PropTypes.func,
+  contactListOpen: PropTypes.bool
 };
 
 export default ContactToolbar;

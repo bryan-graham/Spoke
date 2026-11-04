@@ -17,7 +17,7 @@ jest.mock("../../../src/containers/UserMenu", () => {
   return Stub;
 });
 
-const shellMock = roles => ({
+const shellMock = (roles, logo = null) => ({
   request: { query: SHELL_QUERY, variables: { organizationId: "1" } },
   result: {
     data: {
@@ -25,7 +25,8 @@ const shellMock = roles => ({
       organization: {
         __typename: "Organization",
         id: "1",
-        name: "Graham for Providence"
+        name: "Graham for Providence",
+        logo: logo && { __typename: "OrganizationLogo", ...logo }
       }
     }
   }
@@ -89,7 +90,7 @@ const flush = async () => {
 
 let setShorePreference;
 
-const render = async ({ roles, menu, path, pending }) => {
+const render = async ({ roles, menu, path, pending, logo }) => {
   setShorePreference = jest.fn();
   global.fetch = jest.fn(() =>
     pending
@@ -107,7 +108,7 @@ const render = async ({ roles, menu, path, pending }) => {
   let wrapper;
   await act(async () => {
     wrapper = mount(
-      <MockedProvider mocks={[shellMock(roles), adminMock]} addTypename>
+      <MockedProvider mocks={[shellMock(roles, logo), adminMock]} addTypename>
         <ColorSchemeContext.Provider
           value={{
             preference: "auto",
@@ -260,5 +261,33 @@ describe("ShoreShell", () => {
       .find('nav a[aria-current="page"]')
       .map(a => a.text());
     expect(current).toEqual(["Texting", "Tags"]);
+  });
+
+  describe("the campaign logo", () => {
+    const logo = { light: "/org-logo/1/light?v=1", dark: null };
+
+    it("uses the organization's own logo without Shore", async () => {
+      const wrapper = await render({
+        roles: ["TEXTER"],
+        path: "/app/1/todos",
+        logo
+      });
+      expect(wrapper.find("CampaignBrand").prop("logoUrl")).toBe(logo.light);
+    });
+
+    it("uses Shore's logo, not Spoke's, with Shore's menu", async () => {
+      const wrapper = await render({
+        roles: ["TEXTER"],
+        path: "/app/1/todos",
+        logo,
+        menu: {
+          ...SHORE_MENU,
+          org: { ...SHORE_MENU.org, publicLogo: { light: "https://shore/l" } }
+        }
+      });
+      expect(wrapper.find("CampaignBrand").prop("logoUrl")).toBe(
+        "https://shore/l"
+      );
+    });
   });
 });

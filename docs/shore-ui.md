@@ -4,7 +4,7 @@ Spoke's interface is restyled to match Shore, following
 [shore-design-guide.md](shore-design-guide.md), and shows Shore's shared sidebar menu so
 moving between the two feels like one app.
 
-Status: 2026-11-02. Light and dark mode.
+Status: 2026-11-03. Light and dark mode.
 
 ## What's in this round
 
@@ -14,18 +14,20 @@ Status: 2026-11-02. Light and dark mode.
 | Material-UI theme | `src/styles/mui-theme.js` | Light and dark: navy primary (navy-7 light, navy-5 dark), Inter text, DM Sans headings, 8px controls, 16px cards and dialogs, Shore-style table headers, no all-caps buttons or tabs. Every page picks this up. |
 | Colour scheme | `src/components/ColorScheme.js` | Which scheme to show (below); `render-index.js` applies it before the app loads so dark mode doesn't flash white. |
 | Fonts | `src/client/index.jsx`, `webpack/config.js` | Inter and DM Sans, self-hosted with `@fontsource-variable` (replaces Poppins from Google Fonts). |
-| Shell | `src/components/ShoreShell/` | Canvas, 256px sidebar, raised page panel; on phones a 56px top bar and a slide-in sidebar. Print hides the sidebar. |
+| Shell | `src/components/ShoreShell/` | Canvas, 256px sidebar, raised page panel; on phones a 56px top bar and a slide-in sidebar; tapping anywhere on the top bar (menu icon, logo or name) opens and closes it. Print hides the sidebar. |
 | Page header | `src/components/TopNav.jsx` | Now the title (and back link) inside the panel. The account menu moved to the sidebar. |
 | Account menu | `src/containers/UserMenu.jsx` | Same options as before, shown at the bottom of the sidebar (avatar, name, email). |
 | Shared menu | `src/extensions/contact-loaders/shore/lib/menu.js` | Spoke's server fetches Shore's menu for the signed-in person. |
 
-Spoke's texting screens (sending and replying) stay full screen, without the sidebar.
+Spoke's texting screens (sending and replying) stay full screen, without the sidebar
+([below](#the-texting-screens)).
 
 ## The sidebar
 
 - **Top:** the campaign's logo from Shore's menu (`org.publicLogo`, which loads without a
-  Shore sign-in): the dark version in dark mode and the light one in light mode, falling
-  back to whichever exists. A wide wordmark stands alone; a square logo sits beside the
+  Shore sign-in), or, without Shore's menu, the organization's own logo from Settings
+  ([below](#settings)): the dark version in dark mode and the light one in light mode,
+  falling back to whichever exists. A wide wordmark stands alone; a square logo sits beside the
   campaign name. With no logo (or if it fails to load), the campaign's initials on a navy
   tile.
 - **Page title:** while connected to Shore, "*Campaign* • Shore • Texting" ("Shore •
@@ -48,6 +50,58 @@ Spoke's texting screens (sending and replying) stay full screen, without the sid
   organization, FAQs, superadmin tools, appearance, log out), and the Shore mark when the
   menu came from Shore.
 
+## Settings
+
+`src/containers/Settings/` uses Shore's page pattern: a description under the title, then
+a card per area (icon, title, summary badge), the advanced ones collapsed.
+
+| Card | Contents |
+|---|---|
+| Opt-outs | The default opt-out message, and for admins without Shore, **Export opt-outs** (below). |
+| Texting hours | The on/off switch, the hours (badge: "9 am – 9 pm" or "Off"), and "Change texting hours". |
+| Branding | **Logo** (below) and **Colours** (the organization palette, in a grid). |
+| Service management, *vendor* settings | Each service with a "Set up" / "Needs setup" badge (were coloured header bars). |
+| Texting screen defaults, Overriding default settings, Troubleshooting | Collapsed to start. Troubleshooting (was "External configuration") clears the caches. |
+
+### Logos without Shore
+
+When Spoke isn't showing Shore's menu, owners can upload a **light** and a **dark** logo
+(`src/components/OrganizationLogoSettings.jsx`). Each shows as it will look in the sidebar,
+on that mode's background, with Upload / Replace / Remove (removing asks first, in a small
+popover). With one version, it's used in both modes; with neither, the initials tile.
+With Shore's menu, the card says the logos come from Shore and links to Shore's settings.
+
+| Part | Where |
+|---|---|
+| Storage | Table `organization_logo` (migration `20261104120000_organization_logo.js`): one row per organization and scheme, the image base64-encoded. |
+| Rules | `src/server/lib/organization-logo.js`: PNG, JPEG, GIF or WebP, up to 512 KB, checked by the file's bytes, not just its stated type. SVG isn't accepted, since served from Spoke's address it could run script. |
+| GraphQL | `Organization.logo { light dark }` (addresses, for any member) and `updateOrganizationLogo(organizationId, scheme, image)` (owners; `image` is a data URL, null removes). |
+| Serving | `GET /org-logo/:organizationId/:scheme?v=…`, public like Shore's `publicLogo`. The `?v=` changes with each upload, so each address is cached for good; served with `nosniff` and a sandboxing content policy. |
+
+### Exporting opt-outs without Shore
+
+Admins (Spoke role ADMIN or OWNER) whose Spoke isn't showing Shore's menu get **Export
+opt-outs** in the Opt-outs card (`src/components/OptOutExport.jsx`): a From and To date
+(the last 30 days to start) and **Download CSV**. Both dates are included, in the admin's
+own time zone. With Shore's menu it's hidden, since opt-outs are handled in Shore.
+
+The file has one row per opt-out, oldest first:
+
+| Column | |
+|---|---|
+| `opted_out_at` | When, in UTC (ISO 8601). |
+| `cell` | The number. |
+| `first_name`, `last_name` | The contact, from the campaign they were opted out in (blank if unknown). |
+| `campaign_id`, `campaign_title` | That campaign. |
+| `texter` | Who opted them out. |
+| `reason` | The opt-out's reason code, if any. |
+
+It comes from `GET /opt-out-export/:organizationId?from=<ISO>&to=<ISO>`
+(`src/server/lib/opt-out-export.js`), which needs Spoke's sign-in and the ADMIN role in
+the organization (401 / 403 otherwise, 400 for bad dates) and answers `no-store`. Text from
+contacts and texters that starts with `=`, `+`, `-` or `@` is prefixed with `'` so a
+spreadsheet doesn't run it as a formula; numbers are left as they are.
+
 ## Light and dark mode
 
 | Situation | Spoke shows |
@@ -65,8 +119,25 @@ scheme unreadable. Organizations without a custom palette now get Shore's theme:
 used to send Spoke's old green palette as if the organization had chosen it.
 
 Pages with hard-coded light colours were converted to the scheme's CSS variables, including
-the texting screens, chips, the script editor, notes, and the archived-campaign banner. The
-texting screens' dark grey toolbars stay as they are in both schemes.
+the texting screens, chips, the script editor, notes, and the archived-campaign banner.
+
+## The texting screens
+
+Sending and replying (`src/components/AssignmentTexter/`) stay full screen, without the
+sidebar, but now look like Shore in both schemes:
+
+| Part | Was | Now |
+|---|---|---|
+| Top bar (`Toolbar.jsx`) | Dark grey bar, home icon, "Campaign ID: 12" | Canvas-coloured 56px bar like Shore's phone top bar: a back arrow ("Back to my assignments"), "Campaign 12" dimmed over the title in DM Sans. On phones, a side-panel button opens the campaign's side boxes. |
+| Contact bar (`ContactToolbar.jsx`) | Grey bar, face icon, "11:04 AM - NY, Brooklyn" | Shore's people avatar (initials, colour picked from the name), the first name in DM Sans, "11:04 AM · Brooklyn, NY" dimmed, and bordered previous/next buttons around "3 of 20". With the contact list turned on, a button before the avatar shows and hides it. |
+| Conversation (`MessageList.jsx`) | Contact's messages in blue, the texter's in white, on grey | On the page's panel colour: the contact's messages on the left in a quiet grey bubble, the texter's on the right in the primary navy (an organization's custom primary colour if it has one), 16px corners with a small tail corner, timestamps inside. An opt-out is a coral note under the conversation. |
+| First message | "This is your first message to Pat" | Shore's empty state: "Your first message to Pat", "Read the message below, then send it." Opted out and paused-first-messages screens use it too. |
+| Composer (`Controls.jsx`) | Underlined field, grey selected shortcuts, "↵ Send" | An outlined field under a divider; shortcut buttons (answers and short scripts) are small outlined buttons, the selected one tinted navy like Shore's current sub-page; "All responses" and a coral outlined "Opt out"; a full navy "Send" with a send icon beside "Skip"/"Reopen". |
+| Opt-out (`Controls.jsx`) | "Opt out user", grey choices, "↵ Opt-Out" | A Shore card: "Opt out Pat", what it does, "Standard message"/"No message" as choices (selected tinted navy), an outlined "Last message" field, Cancel and a coral "Opt out". |
+| Contact list (`AssignmentContactsList.jsx`) | Grey search strip, plain list | Like Shore's sidebar: canvas colour, a round search field, rows with 8px corners, the current contact in Shore's current-page row (solid navy in light mode, tinted in dark), a coral dot for contacts waiting for a reply. |
+| Side boxes (`StyleControls.js`) | Grey header strip | Canvas colour with a border, no strip; side-box buttons get 8px corners. |
+
+The avatar is `src/components/PersonAvatar.jsx`, reusable wherever people are listed.
 
 ## Setting up the shared menu
 
@@ -104,8 +175,11 @@ own when missing (the mark falls back to the word "Shore"). They're served at
 - **Dark mode review.** Every page restyles through the theme and the converted colours,
   but not every page has been looked at in dark mode in a real browser; expect a few spots
   to tune (charts use fixed colours).
-- **Page patterns.** Pages restyle through the theme, but keep their own layouts. Next
-  candidates for Shore's page header, cards, tables and empty states: Campaigns, Message
-  Review, and the texter's assignment list.
+- **Page patterns.** Campaigns, People, the campaign editor, Message Review, the texter's
+  assignments and the texting screens use Shore's page header, cards, tables and empty
+  states. Others (campaign stats, Settings, Tags, Phone Numbers) restyle through the theme
+  but keep their own layouts.
+- **Texting screens.** The survey's "All responses" popover, the script list and the
+  individual side boxes (tags, feedback, ...) keep their own layouts inside the new frame.
 - **Campaign switcher.** Shore's brand opens a campaign switcher when there are several;
   Spoke's organization switching stays in the account menu.

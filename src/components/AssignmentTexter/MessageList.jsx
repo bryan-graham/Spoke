@@ -20,6 +20,7 @@ import ListItemText from "@material-ui/core/ListItemText";
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 
 import withMuiTheme from "../../containers/hoc/withMuiTheme";
+import { v } from "../../styles/shore-tokens";
 
 const defaultStyles = {
   optOut: {
@@ -36,8 +37,26 @@ const defaultStyles = {
     marginRight: "24px"
   },
   mediaItem: {
-    marginTop: "5px",
-    backgroundColor: "rgba(255,255,255,.5)"
+    marginTop: "6px",
+    backgroundColor: v("surface"),
+    color: v("text")
+  },
+  optOutNote: {
+    alignSelf: "center",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    margin: "8px 0 4px",
+    padding: "6px 14px",
+    borderRadius: 999,
+    fontSize: 13,
+    color: v("countText"),
+    backgroundColor: v("countBg")
+  },
+  timestamp: {
+    color: "inherit",
+    opacity: 0.7,
+    fontSize: 12
   }
 };
 
@@ -52,7 +71,7 @@ function SecondaryText(props) {
     !message.isFromContact
   ) {
     return (
-      <span style={{ fontSize: "90%", display: "block", paddingTop: "5px" }}>
+      <span style={{ display: "block", paddingTop: "2px" }}>
         Sent {moment.utc(message.createdAt).fromNow()} by{" "}
         <RouterLink
           target="_blank"
@@ -65,7 +84,7 @@ function SecondaryText(props) {
   }
 
   return (
-    <span style={{ fontSize: "90%", display: "block", paddingTop: "5px" }}>
+    <span style={{ display: "block", paddingTop: "2px" }}>
       {moment.utc(message.createdAt).fromNow()}
     </span>
   );
@@ -76,8 +95,23 @@ export class MessageList extends React.Component {
     expanded: false
   };
 
-  optOutItem = optOut =>
-    !optOut ? null : (
+  optOutItem = optOut => {
+    if (!optOut) {
+      return null;
+    }
+    // In the texting screen, a note under the conversation; elsewhere, a row.
+    if (this.props.styles) {
+      return (
+        <div key="optout-item" style={defaultStyles.optOutNote}>
+          <NotInterestedIcon style={{ fontSize: 16 }} />
+          <span>
+            {this.props.contact.firstName} opted out of texts ·{" "}
+            {moment(optOut.createdAt).fromNow()}
+          </span>
+        </div>
+      );
+    }
+    return (
       <div>
         <Divider />
         <ListItem style={defaultStyles.optOut} key={"optout-item"}>
@@ -91,6 +125,7 @@ export class MessageList extends React.Component {
         </ListItem>
       </div>
     );
+  };
 
   renderMsg(message) {
     const { hideMedia } = this.props;
@@ -160,13 +195,10 @@ export class MessageList extends React.Component {
     let received = defaultStyles.received;
     let sent = defaultStyles.sent;
     if (styles) {
-      received = Object.assign({}, styles.messageReceived, {
-        color: muiTheme.palette.common.white,
-        backgroundColor: muiTheme.palette.info.main
-      });
+      received = styles.messageReceived;
       sent = Object.assign({}, styles.messageSent, {
-        color: muiTheme.palette.text.primary,
-        backgroundColor: muiTheme.palette.background.default
+        color: muiTheme.palette.primary.contrastText,
+        backgroundColor: muiTheme.palette.primary.main
       });
     }
 
@@ -179,17 +211,12 @@ export class MessageList extends React.Component {
           <ListItem
             style={message.isFromContact ? received : sent}
             key={message.id}
-            primary={this.renderMsg(message)}
-            secondary={
-              <SecondaryText
-                message={message}
-                review={review}
-                currentUser={currentUser}
-                organizationId={organizationId}
-              />
-            }
           >
             <ListItemText
+              style={styles ? { margin: 0 } : undefined}
+              secondaryTypographyProps={
+                styles ? { style: defaultStyles.timestamp } : undefined
+              }
               primary={this.renderMsg(message)}
               secondary={
                 <SecondaryText

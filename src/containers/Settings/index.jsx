@@ -12,14 +12,23 @@ import DialogContent from "@material-ui/core/DialogContent";
 import Switch from "@material-ui/core/Switch";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Button from "@material-ui/core/Button";
-import Card from "@material-ui/core/Card";
-import CardHeader from "@material-ui/core/CardHeader";
-import CardContent from "@material-ui/core/CardContent";
-import CardActions from "@material-ui/core/CardActions";
-import Collapse from "@material-ui/core/Collapse";
-import IconButton from "@material-ui/core/IconButton";
-
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import {
+  IconAdjustments,
+  IconBan,
+  IconClock,
+  IconLayoutSidebar,
+  IconMessageCog,
+  IconPalette,
+  IconPlugConnected,
+  IconTool
+} from "@tabler/icons-react";
+import CollapsibleCard, {
+  SummaryBadge
+} from "../../components/CollapsibleCard";
+import { PageDescription } from "../../components/ShoreShell/PageHeader";
+import OrganizationLogoSettings from "../../components/OrganizationLogoSettings";
+import OptOutExport from "../../components/OptOutExport";
+import { v, fonts, layout } from "../../styles/shore-tokens";
 import loadData from "../hoc/load-data";
 import withSetTheme from "../hoc/withSetTheme";
 import GSSubmitButton from "../../components/forms/GSSubmitButton";
@@ -31,6 +40,9 @@ import { getServiceManagerComponent } from "../../extensions/service-managers/co
 import GSTextField from "../../components/forms/GSTextField";
 import ThemeEditor from "./themeEditor";
 
+// Shore's page pattern (docs/shore-design-guide.md): a description under the
+// page title, then one card per area, each with an icon, a title and a
+// summary badge; the advanced areas start collapsed.
 const styles = StyleSheet.create({
   section: {
     margin: "10px 0"
@@ -40,15 +52,65 @@ const styles = StyleSheet.create({
     marginRight: 5
   },
   textingHoursSpan: {
-    fontWeight: "bold"
+    fontWeight: 600
   },
   dialogActions: {
-    textAlign: "right"
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 16
   },
   cardHeader: {
     cursor: "pointer"
+  },
+  lead: {
+    color: v("dimmed"),
+    fontSize: 14,
+    lineHeight: 1.5,
+    margin: "4px 0 16px"
+  },
+  subheading: {
+    fontFamily: fonts.heading,
+    fontWeight: 700,
+    fontSize: 15,
+    color: v("text"),
+    margin: "20px 0 4px"
+  },
+  firstSubheading: {
+    marginTop: 4
+  },
+  row: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 12
+  },
+  subCard: {
+    border: `1px solid ${v("panelBorder")}`,
+    borderRadius: layout.controlRadius,
+    padding: "12px 16px",
+    marginTop: 12
+  },
+  subCardHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
+    fontWeight: 600
+  },
+  formActions: {
+    marginTop: 12
   }
 });
+
+const sectionIcon = Icon => <Icon size={20} stroke={layout.iconStroke} />;
+
+const setUpBadge = fullyConfigured =>
+  fullyConfigured === true ? (
+    <SummaryBadge tone="done">Set up</SummaryBadge>
+  ) : fullyConfigured === false ? (
+    <SummaryBadge tone="todo">Needs setup</SummaryBadge>
+  ) : null;
 
 const formatTextingHours = hour => moment(hour, "H").format("h a");
 class Settings extends React.Component {
@@ -72,13 +134,6 @@ class Settings extends React.Component {
       fontWeight: "bolder"
     }
   };
-
-  getCardHeaderStyle() {
-    return Object.assign({}, this.inlineStyles.cardHeader, {
-      backgroundColor: this.props.muiTheme.palette.primary.main,
-      color: this.props.muiTheme.palette.primary.contrastText
-    });
-  }
 
   handleSubmitTextingHoursForm = async ({
     textingHoursStart,
@@ -123,13 +178,15 @@ class Settings extends React.Component {
             onSubmit={this.handleSubmitTextingHoursForm}
             defaultValue={{ textingHoursStart, textingHoursEnd }}
           >
-            <div>
-              Enter the hour in 24-hour time, so e.g. 9am-9pm would be Start
-              Time: 9 and End Time: 21.
+            <div className={css(styles.subheading, styles.firstSubheading)}>
+              Texting hours
+            </div>
+            <div className={css(styles.lead)}>
+              Texters can send first messages only between these hours.
             </div>
             <Form.Field
               as={GSTextField}
-              label="Start time (24h)"
+              label="From"
               name="textingHoursStart"
               type="select"
               fullWidth
@@ -137,7 +194,7 @@ class Settings extends React.Component {
             />
             <Form.Field
               as={GSTextField}
-              label="End time (24h)"
+              label="Until"
               name="textingHoursEnd"
               type="select"
               fullWidth
@@ -174,55 +231,40 @@ class Settings extends React.Component {
       .map(sm => sm.fullyConfigured !== false)
       .reduce((a, b) => a && b, true);
     return (
-      <Card>
-        <CardHeader
-          title={"Service Management"}
-          style={{
-            backgroundColor: allFullyConfigured
-              ? this.props.muiTheme.palette.success.main
-              : this.props.muiTheme.palette.warning.main
-          }}
-        />
-        <CardContent>
-          {serviceManagers.map(sm => {
-            const ServiceManagerComp = getServiceManagerComponent(
-              sm.name,
-              "OrgConfig"
-            );
-            const serviceManagerName = sm.name;
-            return (
-              <Card key={sm.name}>
-                <CardHeader
-                  title={sm.displayName}
-                  style={{
-                    backgroundColor:
-                      sm.fullyConfigured === true
-                        ? this.props.muiTheme.palette.success.main
-                        : sm.fullyConfigured === false
-                        ? this.props.muiTheme.palette.warning.main
-                        : this.props.muiTheme.palette.grey[300]
-                  }}
-                />
-                <CardContent>
-                  <ServiceManagerComp
-                    serviceManagerInfo={sm}
-                    organizationId={organizationId}
-                    inlineStyles={this.inlineStyles}
-                    styles={styles}
-                    saveLabel={this.props.saveLabel}
-                    onSubmit={updateData =>
-                      this.props.mutations.updateServiceManager(
-                        serviceManagerName,
-                        updateData
-                      )
-                    }
-                  />
-                </CardContent>
-              </Card>
-            );
-          })}
-        </CardContent>
-      </Card>
+      <CollapsibleCard
+        title="Service management"
+        icon={sectionIcon(IconPlugConnected)}
+        badge={setUpBadge(allFullyConfigured)}
+      >
+        {serviceManagers.map(sm => {
+          const ServiceManagerComp = getServiceManagerComponent(
+            sm.name,
+            "OrgConfig"
+          );
+          const serviceManagerName = sm.name;
+          return (
+            <div key={sm.name} className={css(styles.subCard)}>
+              <div className={css(styles.subCardHeader)}>
+                <span style={{ flex: 1 }}>{sm.displayName}</span>
+                {setUpBadge(sm.fullyConfigured)}
+              </div>
+              <ServiceManagerComp
+                serviceManagerInfo={sm}
+                organizationId={organizationId}
+                inlineStyles={this.inlineStyles}
+                styles={styles}
+                saveLabel={this.props.saveLabel}
+                onSubmit={updateData =>
+                  this.props.mutations.updateServiceManager(
+                    serviceManagerName,
+                    updateData
+                  )
+                }
+              />
+            </div>
+          );
+        })}
+      </CollapsibleCard>
     );
   }
 
@@ -243,15 +285,11 @@ class Settings extends React.Component {
     }
 
     return (
-      <Card>
-        <CardHeader
-          title={`${name.toUpperCase().charAt(0) + name.slice(1)} Config`}
-          style={{
-            backgroundColor: this.state.serviceVendorAllSet
-              ? this.props.muiTheme.palette.success.main
-              : this.props.muiTheme.palette.warning.main
-          }}
-        />
+      <CollapsibleCard
+        title={`${name.toUpperCase().charAt(0) + name.slice(1)} settings`}
+        icon={sectionIcon(IconMessageCog)}
+        badge={setUpBadge(Boolean(this.state.serviceVendorAllSet))}
+      >
         <ConfigServiceVendor
           organizationId={organizationId}
           config={config}
@@ -268,7 +306,7 @@ class Settings extends React.Component {
             return this.props.data.refetch();
           }}
         />
-      </Card>
+      </CollapsibleCard>
     );
   }
 
@@ -279,214 +317,193 @@ class Settings extends React.Component {
       optOutMessage: yup.string().required()
     });
 
+    const hoursSummary = organization.textingHoursEnforced
+      ? `${formatTextingHours(
+          organization.textingHoursStart
+        )} – ${formatTextingHours(organization.textingHoursEnd)}`
+      : "Off";
+
     return (
       <div>
-        <Card>
-          <CardHeader title="Settings" style={this.getCardHeaderStyle()} />
-          <CardContent>
-            <div className={css(styles.section)}>
-              <GSForm
-                schema={formSchema}
-                onSubmit={this.props.mutations.updateOptOutMessage}
-                defaultValue={{ optOutMessage }}
-              >
-                <Form.Field
-                  as={GSTextField}
-                  label="Default Opt-Out Message"
-                  name="optOutMessage"
-                  fullWidth
-                />
+        <PageDescription>
+          How texting works for this organization: opt-outs, texting hours,
+          branding and connected services.
+        </PageDescription>
 
-                <Form.Submit
-                  as={GSSubmitButton}
-                  label={this.props.saveLabel || "Save Opt-Out Message"}
-                />
-              </GSForm>
-            </div>
-          </CardContent>
-
-          <CardContent>
-            <div className={css(styles.section)}>
-              <span className={css(styles.sectionLabel)}></span>
-              <FormControlLabel
-                color="primary"
-                control={
-                  <Switch
-                    color="primary"
-                    checked={organization.textingHoursEnforced}
-                    onChange={async (event, isToggled) =>
-                      await this.props.mutations.updateTextingHoursEnforcement(
-                        isToggled
-                      )
-                    }
-                  />
-                }
-                labelPlacement="start"
-                label="Enforce texting hours?"
+        <CollapsibleCard title="Opt-outs" icon={sectionIcon(IconBan)}>
+          <div className={css(styles.lead)}>
+            Sent when a texter opts someone out, unless they choose to send
+            nothing or write their own.
+          </div>
+          <GSForm
+            schema={formSchema}
+            onSubmit={this.props.mutations.updateOptOutMessage}
+            defaultValue={{ optOutMessage }}
+          >
+            <Form.Field
+              as={GSTextField}
+              label="Default opt-out message"
+              name="optOutMessage"
+              variant="outlined"
+              multiline
+              fullWidth
+            />
+            <div className={css(styles.formActions)}>
+              <Form.Submit
+                as={GSSubmitButton}
+                label={this.props.saveLabel || "Save opt-out message"}
               />
             </div>
+          </GSForm>
+          <OptOutExport organizationId={organizationId} />
+        </CollapsibleCard>
 
-            {organization.textingHoursEnforced && (
-              <div className={css(styles.section)}>
-                <span className={css(styles.sectionLabel)}>Texting hours:</span>
+        <CollapsibleCard
+          title="Texting hours"
+          icon={sectionIcon(IconClock)}
+          badge={
+            <SummaryBadge
+              tone={organization.textingHoursEnforced ? "info" : "neutral"}
+            >
+              {hoursSummary}
+            </SummaryBadge>
+          }
+        >
+          <div className={css(styles.row)}>
+            <FormControlLabel
+              control={
+                <Switch
+                  color="primary"
+                  checked={organization.textingHoursEnforced}
+                  onChange={async (event, isToggled) =>
+                    await this.props.mutations.updateTextingHoursEnforcement(
+                      isToggled
+                    )
+                  }
+                />
+              }
+              label="Only send first messages during texting hours"
+            />
+          </div>
+          {organization.textingHoursEnforced ? (
+            <div className={css(styles.row)} style={{ marginTop: 8 }}>
+              <div style={{ flex: "1 1 280px" }}>
                 <span className={css(styles.textingHoursSpan)}>
                   {formatTextingHours(organization.textingHoursStart)} to{" "}
                   {formatTextingHours(organization.textingHoursEnd)}
                 </span>
-                {window.TZ
-                  ? ` in your organisation's local time. Timezone ${window.TZ}`
-                  : " in contacts local time (or 12pm-6pm EST if timezone is unknown)"}
+                <span style={{ color: v("dimmed") }}>
+                  {window.TZ
+                    ? ` in your organization's time zone (${window.TZ}).`
+                    : " in each contact's local time (12 pm – 6 pm Eastern when it's unknown)."}
+                </span>
               </div>
-            )}
-          </CardContent>
-          <CardActions>
-            {organization.textingHoursEnforced && (
               <Button
-                color="primary"
                 variant="outlined"
                 onClick={this.handleOpenTextingHoursDialog}
               >
                 Change texting hours
               </Button>
-            )}
-          </CardActions>
-
-          <CardContent>
-            <ThemeEditor organizationId={organizationId} />
-          </CardContent>
-        </Card>
+            </div>
+          ) : (
+            <div className={css(styles.lead)}>
+              Texters can send first messages at any time.
+            </div>
+          )}
+        </CollapsibleCard>
         <div>{this.renderTextingHoursForm()}</div>
+
+        <CollapsibleCard title="Branding" icon={sectionIcon(IconPalette)}>
+          <div className={css(styles.subheading, styles.firstSubheading)}>
+            Logo
+          </div>
+          <div className={css(styles.lead)}>
+            Shown at the top of the sidebar, in light and dark mode.
+          </div>
+          <OrganizationLogoSettings organizationId={organizationId} />
+          <div className={css(styles.subheading)}>Colours</div>
+          <div className={css(styles.lead)}>
+            Buttons, links and highlights. Backgrounds and text always follow
+            light or dark mode, so every page stays readable.
+          </div>
+          <ThemeEditor organizationId={organizationId} />
+        </CollapsibleCard>
+
         {this.renderServiceManagers()}
         {this.renderServiceVendorConfig()}
+
         {this.props.data.organization &&
-          this.props.data.organization.texterUIConfig &&
-          this.props.data.organization.texterUIConfig.sideboxChoices.length && (
-            <Card>
-              <CardHeader
-                title="Texter UI Defaults"
-                style={this.getCardHeaderStyle()}
-                action={
-                  <IconButton>
-                    <ExpandMoreIcon />
-                  </IconButton>
-                }
-                onClick={() =>
-                  this.setState({
-                    TexterUIDefaults: !this.state.TexterUIDefaults
-                  })
-                }
-              />
-              <Collapse
-                in={this.state.TexterUIDefaults}
-                timeout="auto"
-                unmountOnExit
-              >
-                <CardContent>
-                  <CampaignTexterUIForm
-                    formValues={this.props.data.organization}
-                    organization={this.props.data.organization}
-                    onSubmit={async () => {
-                      const { texterUIConfig } = this.state;
-                      await this.props.mutations.editOrganization({
-                        texterUIConfig
-                      });
-                      this.setState({ texterUIConfig: null });
-                    }}
-                    onChange={formValues => {
-                      console.log("change", formValues);
-                      this.setState(formValues);
-                    }}
-                    saveLabel="Save Texter UI Campaign Defaults"
-                    saveDisabled={!this.state.texterUIConfig}
-                  />
-                </CardContent>
-              </Collapse>
-            </Card>
-          )}
-        {this.props.data.organization && this.props.data.organization.settings && (
-          <Card>
-            <CardHeader
-              title="Overriding default settings"
-              style={this.getCardHeaderStyle()}
-              action={
-                <IconButton>
-                  <ExpandMoreIcon />
-                </IconButton>
-              }
-              onClick={() =>
-                this.setState({
-                  OverridingDefaultSettings: !this.state
-                    .OverridingDefaultSettings
-                })
-              }
+        this.props.data.organization.texterUIConfig &&
+        this.props.data.organization.texterUIConfig.sideboxChoices.length ? (
+          <CollapsibleCard
+            title="Texting screen defaults"
+            icon={sectionIcon(IconLayoutSidebar)}
+            startCollapsed
+          >
+            <div className={css(styles.lead)}>
+              The side panels new campaigns start with. Each campaign can change
+              them.
+            </div>
+            <CampaignTexterUIForm
+              formValues={this.props.data.organization}
+              organization={this.props.data.organization}
+              onSubmit={async () => {
+                const { texterUIConfig } = this.state;
+                await this.props.mutations.editOrganization({
+                  texterUIConfig
+                });
+                this.setState({ texterUIConfig: null });
+              }}
+              onChange={formValues => {
+                this.setState(formValues);
+              }}
+              saveLabel="Save texting screen defaults"
+              saveDisabled={!this.state.texterUIConfig}
             />
-            <Collapse
-              in={this.state.OverridingDefaultSettings}
-              timeout="auto"
-              unmountOnExit
-            >
-              <CardContent>
-                <OrganizationFeatureSettings
-                  formValues={this.props.data.organization}
-                  organization={this.props.data.organization}
-                  onSubmit={async () => {
-                    const { settings } = this.state;
-                    await this.props.mutations.editOrganization({
-                      settings
-                    });
-                    this.setState({ settings: null });
-                  }}
-                  onChange={formValues => {
-                    console.log("change", formValues);
-                    this.setState(formValues);
-                  }}
-                  saveLabel="Save settings"
-                  saveDisabled={!this.state.settings}
-                />
-              </CardContent>
-            </Collapse>
-          </Card>
+          </CollapsibleCard>
+        ) : null}
+
+        {this.props.data.organization && this.props.data.organization.settings && (
+          <CollapsibleCard
+            title="Overriding default settings"
+            icon={sectionIcon(IconAdjustments)}
+            startCollapsed
+          >
+            <OrganizationFeatureSettings
+              formValues={this.props.data.organization}
+              organization={this.props.data.organization}
+              onSubmit={async () => {
+                const { settings } = this.state;
+                await this.props.mutations.editOrganization({
+                  settings
+                });
+                this.setState({ settings: null });
+              }}
+              onChange={formValues => {
+                this.setState(formValues);
+              }}
+              saveLabel="Save settings"
+              saveDisabled={!this.state.settings}
+            />
+          </CollapsibleCard>
         )}
 
         {this.props.data.organization && this.props.params.adminPerms && (
-          <Card>
-            <CardHeader
-              title="External configuration"
-              style={this.getCardHeaderStyle()}
-              action={
-                <IconButton>
-                  <ExpandMoreIcon />
-                </IconButton>
-              }
-              onClick={() =>
-                this.setState({
-                  ExternalConfiguration: !this.state.ExternalConfiguration
-                })
-              }
-            />
-            <Collapse
-              in={this.state.ExternalConfiguration}
-              timeout="auto"
-              unmountOnExit
+          <CollapsibleCard
+            title="Troubleshooting"
+            icon={sectionIcon(IconTool)}
+            startCollapsed
+          >
+            <div className={css(styles.lead)}>
+              Only use these if you know what they do.
+            </div>
+            <Button
+              variant="outlined"
+              onClick={this.props.mutations.clearCachedOrgAndExtensionCaches}
             >
-              <CardContent>
-                <h2>DEBUG Zone</h2>
-                <p>
-                  Only take actions here if you know what you&rsquo;re doing
-                </p>
-                <Button
-                  color="secondary"
-                  variant="outlined"
-                  style={this.inlineStyles.dialogButton}
-                  onClick={
-                    this.props.mutations.clearCachedOrgAndExtensionCaches
-                  }
-                >
-                  Clear Cached Organization And Extension Caches
-                </Button>
-              </CardContent>
-            </Collapse>
-          </Card>
+              Clear cached organization and extension caches
+            </Button>
+          </CollapsibleCard>
         )}
       </div>
     );
@@ -711,7 +728,7 @@ const mutations = {
 };
 
 const EnhancedSettings = withSetTheme(
-  loadData({ queries, mutations})(Settings)
+  loadData({ queries, mutations })(Settings)
 );
 
 export default EnhancedSettings;

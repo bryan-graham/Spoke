@@ -48,6 +48,13 @@ export const schema = gql`
     unsetFeatures: [String]
   }
 
+  # The organization's own logo for each colour scheme (Settings): an
+  # address for each uploaded version, or null.
+  type OrganizationLogo {
+    light: String
+    dark: String
+  }
+
   type Organization {
     id: ID
     uuid: String
@@ -64,6 +71,7 @@ export const schema = gql`
     optOuts: [OptOut]
     allowSendAll: Boolean
     theme: JSON
+    logo: OrganizationLogo
     availableActions: [Action]
     settings: OrgSettings
     batchPolicies: [String]

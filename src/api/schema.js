@@ -303,6 +303,11 @@ const rootSchema = gql`
       organizationId: String!
       optOutMessage: String!
     ): Organization
+    updateOrganizationLogo(
+      organizationId: String!
+      scheme: String!
+      image: String
+    ): Organization
     updateTheme(
       primary: String
       secondary: String
