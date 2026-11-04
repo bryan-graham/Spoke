@@ -198,13 +198,12 @@
     }
   },
   "addons": [
-    "heroku-postgresql:essential-0",
+    "heroku-postgresql:essential-1",
     {
       "plan": "heroku-redis:mini",
       "options": {
         "maxmemory-policy": "volatile-lru"
       }
-    },
-    "mailgun:starter"
+    }
   ]
 }
