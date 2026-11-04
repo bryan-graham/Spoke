@@ -57,7 +57,7 @@ a card per area (icon, title, summary badge), the advanced ones collapsed.
 
 | Card | Contents |
 |---|---|
-| Opt-outs | The default opt-out message. |
+| Opt-outs | The default opt-out message, and for admins without Shore, **Export opt-outs** (below). |
 | Texting hours | The on/off switch, the hours (badge: "9 am – 9 pm" or "Off"), and "Change texting hours". |
 | Branding | **Logo** (below) and **Colours** (the organization palette, in a grid). |
 | Service management, *vendor* settings | Each service with a "Set up" / "Needs setup" badge (were coloured header bars). |
@@ -77,6 +77,30 @@ With Shore's menu, the card says the logos come from Shore and links to Shore's 
 | Rules | `src/server/lib/organization-logo.js`: PNG, JPEG, GIF or WebP, up to 512 KB, checked by the file's bytes, not just its stated type. SVG isn't accepted, since served from Spoke's address it could run script. |
 | GraphQL | `Organization.logo { light dark }` (addresses, for any member) and `updateOrganizationLogo(organizationId, scheme, image)` (owners; `image` is a data URL, null removes). |
 | Serving | `GET /org-logo/:organizationId/:scheme?v=…`, public like Shore's `publicLogo`. The `?v=` changes with each upload, so each address is cached for good; served with `nosniff` and a sandboxing content policy. |
+
+### Exporting opt-outs without Shore
+
+Admins (Spoke role ADMIN or OWNER) whose Spoke isn't showing Shore's menu get **Export
+opt-outs** in the Opt-outs card (`src/components/OptOutExport.jsx`): a From and To date
+(the last 30 days to start) and **Download CSV**. Both dates are included, in the admin's
+own time zone. With Shore's menu it's hidden, since opt-outs are handled in Shore.
+
+The file has one row per opt-out, oldest first:
+
+| Column | |
+|---|---|
+| `opted_out_at` | When, in UTC (ISO 8601). |
+| `cell` | The number. |
+| `first_name`, `last_name` | The contact, from the campaign they were opted out in (blank if unknown). |
+| `campaign_id`, `campaign_title` | That campaign. |
+| `texter` | Who opted them out. |
+| `reason` | The opt-out's reason code, if any. |
+
+It comes from `GET /opt-out-export/:organizationId?from=<ISO>&to=<ISO>`
+(`src/server/lib/opt-out-export.js`), which needs Spoke's sign-in and the ADMIN role in
+the organization (401 / 403 otherwise, 400 for bad dates) and answers `no-store`. Text from
+contacts and texters that starts with `=`, `+`, `-` or `@` is prefixed with `'` so a
+spreadsheet doesn't run it as a formula; numbers are left as they are.
 
 ## Light and dark mode
 

@@ -27,6 +27,7 @@ import CollapsibleCard, {
 } from "../../components/CollapsibleCard";
 import { PageDescription } from "../../components/ShoreShell/PageHeader";
 import OrganizationLogoSettings from "../../components/OrganizationLogoSettings";
+import OptOutExport from "../../components/OptOutExport";
 import { v, fonts, layout } from "../../styles/shore-tokens";
 import loadData from "../hoc/load-data";
 import withSetTheme from "../hoc/withSetTheme";
@@ -354,6 +355,7 @@ class Settings extends React.Component {
               />
             </div>
           </GSForm>
+          <OptOutExport organizationId={organizationId} />
         </CollapsibleCard>
 
         <CollapsibleCard

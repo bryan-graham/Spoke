@@ -26,6 +26,10 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import http from "http";
 import cors from "cors";
 import { LOGO_PATH, logoHandler } from "./lib/organization-logo";
+import {
+  EXPORT_PATH as OPT_OUT_EXPORT_PATH,
+  exportHandler as optOutExportHandler
+} from "./lib/opt-out-export";
 
 process.on("uncaughtException", ex => {
   log.error(ex);
@@ -160,6 +164,9 @@ server.start().then(() => {
 
   // An organization's own logos (Settings), for the sidebar without Shore.
   app.get(`${LOGO_PATH}/:organizationId/:scheme`, logoHandler);
+
+  // Opt-outs as CSV for admins (Settings), signed in with Spoke's session.
+  app.get(`${OPT_OUT_EXPORT_PATH}/:organizationId`, optOutExportHandler);
 
   app.get("/logout-callback", (req, res) => {
     req.logOut();
