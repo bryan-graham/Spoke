@@ -25,8 +25,9 @@ Spoke's texting screens (sending and replying) stay full screen, without the sid
 ## The sidebar
 
 - **Top:** the campaign's logo from Shore's menu (`org.publicLogo`, which loads without a
-  Shore sign-in): the dark version in dark mode and the light one in light mode, falling
-  back to whichever exists. A wide wordmark stands alone; a square logo sits beside the
+  Shore sign-in), or, without Shore's menu, the organization's own logo from Settings
+  ([below](#settings)): the dark version in dark mode and the light one in light mode,
+  falling back to whichever exists. A wide wordmark stands alone; a square logo sits beside the
   campaign name. With no logo (or if it fails to load), the campaign's initials on a navy
   tile.
 - **Page title:** while connected to Shore, "*Campaign* • Shore • Texting" ("Shore •
@@ -48,6 +49,34 @@ Spoke's texting screens (sending and replying) stay full screen, without the sid
 - **Bottom:** the signed-in person, opening the account menu (account, switch
   organization, FAQs, superadmin tools, appearance, log out), and the Shore mark when the
   menu came from Shore.
+
+## Settings
+
+`src/containers/Settings/` uses Shore's page pattern: a description under the title, then
+a card per area (icon, title, summary badge), the advanced ones collapsed.
+
+| Card | Contents |
+|---|---|
+| Opt-outs | The default opt-out message. |
+| Texting hours | The on/off switch, the hours (badge: "9 am – 9 pm" or "Off"), and "Change texting hours". |
+| Branding | **Logo** (below) and **Colours** (the organization palette, in a grid). |
+| Service management, *vendor* settings | Each service with a "Set up" / "Needs setup" badge (were coloured header bars). |
+| Texting screen defaults, Overriding default settings, Troubleshooting | Collapsed to start. Troubleshooting (was "External configuration") clears the caches. |
+
+### Logos without Shore
+
+When Spoke isn't showing Shore's menu, owners can upload a **light** and a **dark** logo
+(`src/components/OrganizationLogoSettings.jsx`). Each shows as it will look in the sidebar,
+on that mode's background, with Upload / Replace / Remove (removing asks first, in a small
+popover). With one version, it's used in both modes; with neither, the initials tile.
+With Shore's menu, the card says the logos come from Shore and links to Shore's settings.
+
+| Part | Where |
+|---|---|
+| Storage | Table `organization_logo` (migration `20261104120000_organization_logo.js`): one row per organization and scheme, the image base64-encoded. |
+| Rules | `src/server/lib/organization-logo.js`: PNG, JPEG, GIF or WebP, up to 512 KB, checked by the file's bytes, not just its stated type. SVG isn't accepted, since served from Spoke's address it could run script. |
+| GraphQL | `Organization.logo { light dark }` (addresses, for any member) and `updateOrganizationLogo(organizationId, scheme, image)` (owners; `image` is a data URL, null removes). |
+| Serving | `GET /org-logo/:organizationId/:scheme?v=…`, public like Shore's `publicLogo`. The `?v=` changes with each upload, so each address is cached for good; served with `nosniff` and a sandboxing content policy. |
 
 ## Light and dark mode
 

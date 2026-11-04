@@ -1,6 +1,7 @@
 import GraphQLDate from "graphql-date";
 import GraphQLJSON from "graphql-type-json";
 import { GraphQLError } from "graphql";
+import { saveLogo, LogoError } from "../lib/organization-logo";
 import isUrl from "is-url";
 import _ from "lodash";
 import { gzip, makeTree, getHighestRole } from "../../lib";
@@ -794,6 +795,22 @@ const rootMutations = {
       await organization.save();
       await cacheableData.organization.clear(organizationId);
 
+      return await Organization.get(organizationId);
+    },
+    updateOrganizationLogo: async (
+      _,
+      { organizationId, scheme, image },
+      { user }
+    ) => {
+      await accessRequired(user, organizationId, "OWNER");
+      try {
+        await saveLogo(organizationId, scheme, image);
+      } catch (err) {
+        if (err instanceof LogoError) {
+          throw new GraphQLError(err.message);
+        }
+        throw err;
+      }
       return await Organization.get(organizationId);
     },
     updateTheme: async (

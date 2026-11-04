@@ -4,6 +4,7 @@ import { r, Organization, cacheableData } from "../models";
 import ownedPhoneNumber from "./lib/owned-phone-number";
 import { getTags } from "./tag";
 import { accessRequired } from "./errors";
+import { getLogoUrls } from "../lib/organization-logo";
 import { getCampaigns } from "./campaign";
 import { buildUsersQuery } from "./user";
 import {
@@ -153,6 +154,15 @@ export const resolvers = {
       // app uses its default theme (Shore's, src/styles/mui-theme.js) for the
       // current color scheme, instead of an old hard-coded palette.
       getFeatures(organization).theme || null,
+    // Any member's sidebar shows it (the images themselves are public).
+    logo: async (organization, _, { user }) => {
+      try {
+        await accessRequired(user, organization.id, "TEXTER", true);
+      } catch (err) {
+        return null;
+      }
+      return getLogoUrls(organization.id);
+    },
     settings: async (organization, _, { user, loaders }) => {
       try {
         await accessRequired(user, organization.id, "OWNER", true);

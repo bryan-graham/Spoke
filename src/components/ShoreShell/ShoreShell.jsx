@@ -31,6 +31,10 @@ export const SHELL_QUERY = gql`
     organization(id: $organizationId) {
       id
       name
+      logo {
+        light
+        dark
+      }
     }
   }
 `;
@@ -379,9 +383,15 @@ export default function ShoreShell({
     (shoreMenu && shoreMenu.org && shoreMenu.org.name) ||
     (data && data.organization && data.organization.name) ||
     "";
+  // With Shore's menu, the logo uploaded in Shore; otherwise the
+  // organization's own (Settings).
   const brandLogo =
-    pickLogo(shoreMenu && shoreMenu.org && shoreMenu.org.publicLogo, scheme) ||
-    undefined;
+    (shoreMenu
+      ? pickLogo(shoreMenu.org && shoreMenu.org.publicLogo, scheme)
+      : pickLogo(
+          data && data.organization && data.organization.logo,
+          scheme
+        )) || undefined;
 
   // Connected to Shore: "Graham for Providence • Shore • Texting".
   const shoreOrgName = (shoreMenu && shoreMenu.org && shoreMenu.org.name) || "";
