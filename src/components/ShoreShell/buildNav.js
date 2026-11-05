@@ -13,7 +13,8 @@ import { hasRole } from "../../lib/permissions";
 //   the person isn't a Shore member), there's nothing to nest under: Spoke's
 //   own pages are the top-level items (texters: My assignments).
 
-// Spoke's own pages, with the minimum role that may see each.
+// Spoke's own pages, with the minimum role that may see each. Settings is one
+// sidebar item covering the SETTINGS_TABS pages below.
 export const SPOKE_SECTIONS = [
   {
     key: "campaigns",
@@ -23,18 +24,29 @@ export const SPOKE_SECTIONS = [
     role: "SUPERVOLUNTEER"
   },
   {
-    key: "people",
-    label: "People",
-    icon: "users",
-    path: "people",
-    role: "ADMIN"
-  },
-  {
     key: "incoming",
     label: "Message Review",
     icon: "messages",
     path: "incoming",
     role: "SUPERVOLUNTEER"
+  },
+  {
+    key: "settings",
+    label: "Settings",
+    icon: "settings",
+    settingsGroup: true
+  }
+];
+
+// The pages under Settings, shown as tabs across the top of each. They keep
+// their own addresses (/admin/:id/people and so on), so existing links work.
+export const SETTINGS_TABS = [
+  {
+    key: "people",
+    label: "Users",
+    icon: "users",
+    path: "people",
+    role: "ADMIN"
   },
   {
     key: "bulk-script-editor",
@@ -51,19 +63,19 @@ export const SPOKE_SECTIONS = [
     role: "SUPERVOLUNTEER"
   },
   {
-    key: "settings",
-    label: "Settings",
-    icon: "settings",
-    path: "settings",
-    role: "SUPERVOLUNTEER"
-  },
-  {
     key: "phone-numbers",
     label: "Phone Numbers",
     icon: "phone",
     path: "phone-numbers",
     role: "ADMIN",
     needsPhoneInventory: true
+  },
+  {
+    key: "general",
+    label: "General",
+    icon: "adjustments",
+    path: "settings",
+    role: "SUPERVOLUNTEER"
   }
 ];
 
@@ -73,9 +85,12 @@ const pathMatches = (currentPath, to) =>
   Boolean(currentPath) &&
   (currentPath === to || currentPath.startsWith(`${to}/`));
 
-// Spoke's pages this person may see: My assignments for everyone, plus the
-// admin pages their role allows.
-export function spokePages({
+const allowed = (section, roles, phoneInventoryEnabled) =>
+  hasRole(section.role, roles || []) &&
+  (!section.needsPhoneInventory || phoneInventoryEnabled);
+
+// The Settings tabs this person may see, with the current one marked.
+export function settingsTabs({
   organizationId,
   roles,
   phoneInventoryEnabled,
@@ -84,29 +99,62 @@ export function spokePages({
   if (!organizationId) {
     return [];
   }
+  return SETTINGS_TABS.filter(t =>
+    allowed(t, roles, phoneInventoryEnabled)
+  ).map(t => {
+    const to = `/admin/${organizationId}/${t.path}`;
+    return {
+      key: t.key,
+      label: t.label,
+      icon: t.icon,
+      to,
+      active: pathMatches(currentPath, to)
+    };
+  });
+}
+
+// Spoke's pages this person may see: My assignments for everyone, plus the
+// admin pages their role allows. Settings links to its first visible tab and
+// is current on any of them.
+export function spokePages(context) {
+  const { organizationId, roles, currentPath } = context;
+  if (!organizationId) {
+    return [];
+  }
+  const tabs = settingsTabs(context);
   const items = [
     {
       key: "assignments",
       label: "My assignments",
       icon: "list-check",
       to: `/app/${organizationId}/todos`,
-      dataTest: "navSwitchToTexter"
-    },
-    ...SPOKE_SECTIONS.filter(
-      s =>
-        hasRole(s.role, roles || []) &&
-        (!s.needsPhoneInventory || phoneInventoryEnabled)
-    ).map(s => ({
-      key: s.key,
-      label: s.label,
-      icon: s.icon,
-      to: `/admin/${organizationId}/${s.path}`
-    }))
+      dataTest: "navSwitchToTexter",
+      active: pathMatches(currentPath, `/app/${organizationId}/todos`)
+    }
   ];
-  return items.map(item => ({
-    ...item,
-    active: pathMatches(currentPath, item.to)
-  }));
+  SPOKE_SECTIONS.forEach(s => {
+    if (s.settingsGroup) {
+      if (tabs.length) {
+        items.push({
+          key: s.key,
+          label: s.label,
+          icon: s.icon,
+          to: tabs[0].to,
+          active: tabs.some(t => t.active)
+        });
+      }
+    } else if (allowed(s, roles)) {
+      const to = `/admin/${organizationId}/${s.path}`;
+      items.push({
+        key: s.key,
+        label: s.label,
+        icon: s.icon,
+        to,
+        active: pathMatches(currentPath, to)
+      });
+    }
+  });
+  return items;
 }
 
 // Under Shore's Texting item: only for admins (a texter's Texting has nothing

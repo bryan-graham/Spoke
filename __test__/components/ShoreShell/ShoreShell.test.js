@@ -245,10 +245,7 @@ describe("ShoreShell", () => {
       "Texting",
       "My assignments",
       "Campaigns",
-      "People",
       "Message Review",
-      "Bulk Script Editor",
-      "Tags",
       "Settings",
       "Settings"
     ]);
@@ -260,7 +257,7 @@ describe("ShoreShell", () => {
     const current = wrapper
       .find('nav a[aria-current="page"]')
       .map(a => a.text());
-    expect(current).toEqual(["Texting", "Tags"]);
+    expect(current).toEqual(["Texting", "Settings"]);
   });
 
   describe("the campaign logo", () => {

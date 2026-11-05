@@ -1,6 +1,7 @@
 import {
   buildNav,
   spokeSubItems,
+  settingsTabs,
   monogram
 } from "../../../src/components/ShoreShell/buildNav";
 
@@ -94,10 +95,7 @@ describe("buildNav", () => {
     expect(texting.subItems.map(i => i.label)).toEqual([
       "My assignments",
       "Campaigns",
-      "People",
       "Message Review",
-      "Bulk Script Editor",
-      "Tags",
       "Settings"
     ]);
     expect(texting.subItems.filter(i => i.active).map(i => i.key)).toEqual([
@@ -122,16 +120,13 @@ describe("buildNav", () => {
       expect(groups[0].items.map(i => i.label)).toEqual([
         "My assignments",
         "Campaigns",
-        "People",
         "Message Review",
-        "Bulk Script Editor",
-        "Tags",
         "Settings"
       ]);
       expect(groups[0].items.some(i => i.key === "texting")).toBe(false);
       expect(groups[0].items.some(i => i.subItems)).toBe(false);
       expect(groups[0].items.filter(i => i.active).map(i => i.key)).toEqual([
-        "people"
+        "settings"
       ]);
     });
 
@@ -159,19 +154,52 @@ describe("buildNav", () => {
       roles: ["TEXTER", "SUPERVOLUNTEER"],
       phoneInventoryEnabled: true
     }).map(i => i.key);
-    expect(sup).toEqual([
-      "assignments",
-      "campaigns",
-      "incoming",
-      "tags",
-      "settings"
-    ]);
-    const withPhones = spokeSubItems({
-      organizationId: "1",
-      roles: admin,
-      phoneInventoryEnabled: true
-    }).map(i => i.key);
-    expect(withPhones).toContain("phone-numbers");
+    expect(sup).toEqual(["assignments", "campaigns", "incoming", "settings"]);
+  });
+
+  describe("settingsTabs", () => {
+    it("lists Users, Bulk Script Editor, Tags, Phone Numbers and General for admins", () => {
+      const tabs = settingsTabs({
+        organizationId: "7",
+        roles: admin,
+        phoneInventoryEnabled: true,
+        currentPath: "/admin/7/settings"
+      });
+      expect(tabs.map(t => [t.label, t.to])).toEqual([
+        ["Users", "/admin/7/people"],
+        ["Bulk Script Editor", "/admin/7/bulk-script-editor"],
+        ["Tags", "/admin/7/tags"],
+        ["Phone Numbers", "/admin/7/phone-numbers"],
+        ["General", "/admin/7/settings"]
+      ]);
+      expect(tabs.filter(t => t.active).map(t => t.key)).toEqual(["general"]);
+    });
+
+    it("filters by role and phone inventory", () => {
+      const sup = settingsTabs({
+        organizationId: "1",
+        roles: ["TEXTER", "SUPERVOLUNTEER"],
+        phoneInventoryEnabled: true
+      }).map(t => t.key);
+      expect(sup).toEqual(["tags", "general"]);
+      const noPhones = settingsTabs({
+        organizationId: "1",
+        roles: admin,
+        phoneInventoryEnabled: false
+      }).map(t => t.key);
+      expect(noPhones).not.toContain("phone-numbers");
+    });
+
+    it("points the Settings nav item at the first tab the person can see", () => {
+      const settingsFor = roles =>
+        spokeSubItems({ organizationId: "1", roles }).find(
+          i => i.key === "settings"
+        );
+      expect(settingsFor(admin).to).toBe("/admin/1/people");
+      expect(settingsFor(["TEXTER", "SUPERVOLUNTEER"]).to).toBe(
+        "/admin/1/tags"
+      );
+    });
   });
 
   it("adds Texting when Shore's menu doesn't include it", () => {
