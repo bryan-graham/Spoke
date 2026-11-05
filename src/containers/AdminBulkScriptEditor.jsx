@@ -160,7 +160,6 @@ class AdminBulkScriptEditor extends Component {
 
     return (
       <div>
-        <h1>Bulk Script Editor</h1>
         <Paper style={styles.paddedPaper}>
           <p style={styles.bold}>Find and replace</p>
           <FormControl fullWidth>
