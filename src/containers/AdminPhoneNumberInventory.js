@@ -371,6 +371,10 @@ class AdminPhoneNumberInventory extends React.Component {
 
     return (
       <div>
+        <PageDescription>
+          This organization's phone numbers by area code: how many are in use by
+          campaigns and how many are free.
+        </PageDescription>
         {this.renderFilters()}
 
         <MUIDataTable

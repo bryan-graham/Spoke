@@ -19,6 +19,7 @@ import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
 
 import loadData from "./hoc/load-data";
+import { PageDescription } from "../components/ShoreShell/PageHeader";
 import { v } from "../styles/shore-tokens";
 
 const PROTECTED_CHARACTERS = ["/"];
@@ -160,6 +161,10 @@ class AdminBulkScriptEditor extends Component {
 
     return (
       <div>
+        <PageDescription>
+          Find and replace text in the scripts and canned responses of many
+          campaigns at once.
+        </PageDescription>
         <Paper style={styles.paddedPaper}>
           <p style={styles.bold}>Find and replace</p>
           <FormControl fullWidth>
