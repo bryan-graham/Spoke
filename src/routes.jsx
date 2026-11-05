@@ -58,6 +58,13 @@ const checkTexterDowntime = requireAuth => (nextState, replace) => {
   }
 };
 
+// Branding and Connections are tabs of the Settings page, each showing one
+// of its sections.
+const BrandingSettings = props => <Settings {...props} section="branding" />;
+const ConnectionSettings = props => (
+  <Settings {...props} section="connections" />
+);
+
 export default function makeRoutes(requireAuth = () => {}) {
   return (
     <Route path="/" component={App} onEnter={checkDowntime}>
@@ -84,6 +91,8 @@ export default function makeRoutes(requireAuth = () => {}) {
           <Route path="bulk-script-editor" component={AdminBulkScriptEditor} />
           <Route path="tags" component={Tags} />
           <Route path="settings" component={Settings} />
+          <Route path="branding" component={BrandingSettings} />
+          <Route path="connections" component={ConnectionSettings} />
           <Route path="phone-numbers" component={AdminPhoneNumberInventory} />
         </Route>
       </Route>

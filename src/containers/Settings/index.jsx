@@ -310,7 +310,61 @@ class Settings extends React.Component {
     );
   }
 
+  renderBranding() {
+    const { id: organizationId } = this.props.data.organization;
+    return (
+      <div>
+        <PageDescription>
+          How this organization looks in Spoke: its logo and colours.
+        </PageDescription>
+        <CollapsibleCard title="Branding" icon={sectionIcon(IconPalette)}>
+          <div className={css(styles.subheading, styles.firstSubheading)}>
+            Logo
+          </div>
+          <div className={css(styles.lead)}>
+            Shown at the top of the sidebar, in light and dark mode.
+          </div>
+          <OrganizationLogoSettings organizationId={organizationId} />
+          <div className={css(styles.subheading)}>Colours</div>
+          <div className={css(styles.lead)}>
+            Buttons, links and highlights. Backgrounds and text always follow
+            light or dark mode, so every page stays readable.
+          </div>
+          <ThemeEditor organizationId={organizationId} />
+        </CollapsibleCard>
+      </div>
+    );
+  }
+
+  renderConnections() {
+    const managers = this.renderServiceManagers();
+    const vendor = this.renderServiceVendorConfig();
+    return (
+      <div>
+        <PageDescription>
+          The services Spoke uses to send texts and sync data for this
+          organization.
+        </PageDescription>
+        {managers}
+        {vendor}
+        {!managers && !vendor ? (
+          <div className={css(styles.lead)}>
+            Nothing to set up here. Connections appear when your Spoke install
+            turns on a service that's configured per organization.
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   render() {
+    // One Settings tab at a time: General, Branding or Connections.
+    if (this.props.section === "branding") {
+      return this.renderBranding();
+    }
+    if (this.props.section === "connections") {
+      return this.renderConnections();
+    }
     const { organization } = this.props.data;
     const { optOutMessage, id: organizationId } = organization;
     const formSchema = yup.object({
@@ -326,8 +380,8 @@ class Settings extends React.Component {
     return (
       <div>
         <PageDescription>
-          How texting works for this organization: opt-outs, texting hours,
-          branding and connected services.
+          How texting works for this organization: opt-outs, texting hours and
+          defaults.
         </PageDescription>
 
         <CollapsibleCard title="Opt-outs" icon={sectionIcon(IconBan)}>
@@ -413,25 +467,6 @@ class Settings extends React.Component {
         </CollapsibleCard>
         <div>{this.renderTextingHoursForm()}</div>
 
-        <CollapsibleCard title="Branding" icon={sectionIcon(IconPalette)}>
-          <div className={css(styles.subheading, styles.firstSubheading)}>
-            Logo
-          </div>
-          <div className={css(styles.lead)}>
-            Shown at the top of the sidebar, in light and dark mode.
-          </div>
-          <OrganizationLogoSettings organizationId={organizationId} />
-          <div className={css(styles.subheading)}>Colours</div>
-          <div className={css(styles.lead)}>
-            Buttons, links and highlights. Backgrounds and text always follow
-            light or dark mode, so every page stays readable.
-          </div>
-          <ThemeEditor organizationId={organizationId} />
-        </CollapsibleCard>
-
-        {this.renderServiceManagers()}
-        {this.renderServiceVendorConfig()}
-
         {this.props.data.organization &&
         this.props.data.organization.texterUIConfig &&
         this.props.data.organization.texterUIConfig.sideboxChoices.length ? (
@@ -514,7 +549,8 @@ Settings.propTypes = {
   data: PropTypes.object,
   params: PropTypes.object,
   mutations: PropTypes.object,
-  saveLabel: PropTypes.string
+  saveLabel: PropTypes.string,
+  section: PropTypes.oneOf(["general", "branding", "connections"])
 };
 
 const queries = {

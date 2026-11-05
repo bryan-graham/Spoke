@@ -158,7 +158,7 @@ describe("buildNav", () => {
   });
 
   describe("settingsTabs", () => {
-    it("lists Users, Bulk Script Editor, Tags, Phone Numbers and General for admins", () => {
+    it("lists every tab, in order, for owners", () => {
       const tabs = settingsTabs({
         organizationId: "7",
         roles: admin,
@@ -166,11 +166,13 @@ describe("buildNav", () => {
         currentPath: "/admin/7/settings"
       });
       expect(tabs.map(t => [t.label, t.to])).toEqual([
-        ["Users", "/admin/7/people"],
+        ["General", "/admin/7/settings"],
+        ["Branding", "/admin/7/branding"],
+        ["Connections", "/admin/7/connections"],
         ["Bulk Script Editor", "/admin/7/bulk-script-editor"],
         ["Tags", "/admin/7/tags"],
-        ["Phone Numbers", "/admin/7/phone-numbers"],
-        ["General", "/admin/7/settings"]
+        ["Users", "/admin/7/people"],
+        ["Phone Numbers", "/admin/7/phone-numbers"]
       ]);
       expect(tabs.filter(t => t.active).map(t => t.key)).toEqual(["general"]);
     });
@@ -181,7 +183,20 @@ describe("buildNav", () => {
         roles: ["TEXTER", "SUPERVOLUNTEER"],
         phoneInventoryEnabled: true
       }).map(t => t.key);
-      expect(sup).toEqual(["tags", "general"]);
+      expect(sup).toEqual(["general", "tags"]);
+      // Saving branding and connections needs OWNER on the server.
+      const adminOnly = settingsTabs({
+        organizationId: "1",
+        roles: ["TEXTER", "SUPERVOLUNTEER", "ADMIN"],
+        phoneInventoryEnabled: true
+      }).map(t => t.key);
+      expect(adminOnly).toEqual([
+        "general",
+        "bulk-script-editor",
+        "tags",
+        "people",
+        "phone-numbers"
+      ]);
       const noPhones = settingsTabs({
         organizationId: "1",
         roles: admin,
@@ -190,14 +205,14 @@ describe("buildNav", () => {
       expect(noPhones).not.toContain("phone-numbers");
     });
 
-    it("points the Settings nav item at the first tab the person can see", () => {
+    it("points the Settings nav item at General, the first tab", () => {
       const settingsFor = roles =>
         spokeSubItems({ organizationId: "1", roles }).find(
           i => i.key === "settings"
         );
-      expect(settingsFor(admin).to).toBe("/admin/1/people");
+      expect(settingsFor(admin).to).toBe("/admin/1/settings");
       expect(settingsFor(["TEXTER", "SUPERVOLUNTEER"]).to).toBe(
-        "/admin/1/tags"
+        "/admin/1/settings"
       );
     });
   });

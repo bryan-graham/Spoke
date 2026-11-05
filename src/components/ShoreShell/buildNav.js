@@ -42,11 +42,25 @@ export const SPOKE_SECTIONS = [
 // their own addresses (/admin/:id/people and so on), so existing links work.
 export const SETTINGS_TABS = [
   {
-    key: "people",
-    label: "Users",
-    icon: "users",
-    path: "people",
-    role: "ADMIN"
+    key: "general",
+    label: "General",
+    icon: "adjustments",
+    path: "settings",
+    role: "SUPERVOLUNTEER"
+  },
+  {
+    key: "branding",
+    label: "Branding",
+    icon: "palette",
+    path: "branding",
+    role: "OWNER"
+  },
+  {
+    key: "connections",
+    label: "Connections",
+    icon: "plug-connected",
+    path: "connections",
+    role: "OWNER"
   },
   {
     key: "bulk-script-editor",
@@ -63,19 +77,19 @@ export const SETTINGS_TABS = [
     role: "SUPERVOLUNTEER"
   },
   {
+    key: "people",
+    label: "Users",
+    icon: "users",
+    path: "people",
+    role: "ADMIN"
+  },
+  {
     key: "phone-numbers",
     label: "Phone Numbers",
     icon: "phone",
     path: "phone-numbers",
     role: "ADMIN",
     needsPhoneInventory: true
-  },
-  {
-    key: "general",
-    label: "General",
-    icon: "adjustments",
-    path: "settings",
-    role: "SUPERVOLUNTEER"
   }
 ];
 
