@@ -8,6 +8,7 @@ import {
 } from "../../../src/server/lib/opt-out-export";
 import {
   cleanupTest,
+  createCampaign,
   createStartedCampaign,
   setupTest
 } from "../../test_helpers";
@@ -56,12 +57,29 @@ describe("opt-out export", () => {
     await cleanupTest();
   }, global.DATABASE_SETUP_TEARDOWN_TIMEOUT);
 
-  const optOut = async (contact, createdAt, reason = "") => {
+  const optOut = async (
+    contact,
+    createdAt,
+    reason = "",
+    assignmentId = campaign.assignmentId
+  ) => {
     await r.knex("opt_out").insert({
       cell: contact.cell,
-      assignment_id: campaign.assignmentId,
+      assignment_id: assignmentId,
       organization_id: campaign.organizationId,
       reason_code: reason,
+      created_at: createdAt
+    });
+  };
+
+  const inbound = async (contactId, cell, createdAt, text = "STOP") => {
+    await r.knex("message").insert({
+      campaign_contact_id: contactId,
+      contact_number: cell,
+      user_number: "+12025550100",
+      is_from_contact: true,
+      text,
+      send_status: "DELIVERED",
       created_at: createdAt
     });
   };
@@ -105,8 +123,84 @@ describe("opt-out export", () => {
     expect(a.campaign_id).toBe(String(campaign.testCampaign.id));
     expect(a.reason).toBe("STOP");
     expect(a.texter).not.toBe("");
+    expect(a.matched_by).toBe("assignment");
+    expect(a.first_name).toBe(first.first_name);
     expect(b.cell).toBe(second.cell);
     expect(b.first_name).toBe("'=cmd");
+  });
+
+  it("matches each opt-out to a contact: stop message, assignment, last inbound", async () => {
+    const [first, second, third, fourth] = campaign.testContacts;
+    await r
+      .knex("campaign_contact")
+      .where("id", first.id)
+      .update({ external_id: "A-1" });
+    await r
+      .knex("campaign_contact")
+      .where("id", second.id)
+      .update({ external_id: "A-2" });
+    // The same numbers are also contacts in another of the org's campaigns.
+    const other = await createCampaign(
+      campaign.testAdminUser,
+      campaign.testOrganization
+    );
+    const [otherFirst] = await r
+      .knex("campaign_contact")
+      .insert({
+        campaign_id: other.id,
+        cell: first.cell,
+        external_id: "B-1",
+        first_name: "Bea",
+        last_name: "One"
+      })
+      .returning("id");
+    const [otherThird] = await r
+      .knex("campaign_contact")
+      .insert({
+        campaign_id: other.id,
+        cell: third.cell,
+        external_id: "B-3",
+        first_name: "Bea",
+        last_name: "Three"
+      })
+      .returning("id");
+    const idOf = row => (typeof row === "object" ? row.id : row);
+
+    // first: replied STOP in the other campaign 20s before the opt-out, so
+    // the message wins over the assignment.
+    await inbound(idOf(otherFirst), first.cell, "2026-10-01T11:59:40Z");
+    await optOut(first, "2026-10-01T12:00:00Z", "STOP");
+    // second: entered by hand, no message: the assignment's campaign.
+    await optOut(second, "2026-10-02T12:00:00Z");
+    // third: no assignment and no STOP, but replied earlier.
+    await inbound(
+      idOf(otherThird),
+      third.cell,
+      "2026-09-20T12:00:00Z",
+      "who is this"
+    );
+    await optOut(third, "2026-10-03T12:00:00Z", "", null);
+    // fourth: nothing to match.
+    await optOut(fourth, "2026-10-04T12:00:00Z", "", null);
+
+    const res = await run(campaign.testAdminUser, {
+      from: "2026-10-01T00:00:00.000Z",
+      to: "2026-11-01T00:00:00.000Z"
+    });
+    const rows = Papa.parse(res.body, { header: true }).data;
+    expect(
+      rows.map(row => [
+        row.cell,
+        row.matched_by,
+        row.external_id,
+        row.first_name
+      ])
+    ).toEqual([
+      [first.cell, "stop_message", "B-1", "Bea"],
+      [second.cell, "assignment", "A-2", second.first_name],
+      [third.cell, "last_inbound", "B-3", "Bea"],
+      [fourth.cell, "", "", ""]
+    ]);
   });
 
   it("is only for admins", async () => {
