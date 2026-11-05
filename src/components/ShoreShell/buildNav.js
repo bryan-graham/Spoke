@@ -49,18 +49,11 @@ export const SETTINGS_TABS = [
     role: "SUPERVOLUNTEER"
   },
   {
-    key: "branding",
-    label: "Branding",
-    icon: "palette",
-    path: "branding",
-    role: "OWNER"
-  },
-  {
-    key: "connections",
-    label: "Connections",
-    icon: "plug-connected",
-    path: "connections",
-    role: "OWNER"
+    key: "people",
+    label: "Users",
+    icon: "users",
+    path: "people",
+    role: "ADMIN"
   },
   {
     key: "bulk-script-editor",
@@ -77,11 +70,18 @@ export const SETTINGS_TABS = [
     role: "SUPERVOLUNTEER"
   },
   {
-    key: "people",
-    label: "Users",
-    icon: "users",
-    path: "people",
-    role: "ADMIN"
+    key: "branding",
+    label: "Branding",
+    icon: "palette",
+    path: "branding",
+    role: "OWNER"
+  },
+  {
+    key: "connections",
+    label: "Connections",
+    icon: "plug-connected",
+    path: "connections",
+    role: "OWNER"
   },
   {
     key: "phone-numbers",

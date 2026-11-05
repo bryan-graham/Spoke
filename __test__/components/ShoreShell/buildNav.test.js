@@ -167,11 +167,11 @@ describe("buildNav", () => {
       });
       expect(tabs.map(t => [t.label, t.to])).toEqual([
         ["General", "/admin/7/settings"],
-        ["Branding", "/admin/7/branding"],
-        ["Connections", "/admin/7/connections"],
+        ["Users", "/admin/7/people"],
         ["Bulk Script Editor", "/admin/7/bulk-script-editor"],
         ["Tags", "/admin/7/tags"],
-        ["Users", "/admin/7/people"],
+        ["Branding", "/admin/7/branding"],
+        ["Connections", "/admin/7/connections"],
         ["Phone Numbers", "/admin/7/phone-numbers"]
       ]);
       expect(tabs.filter(t => t.active).map(t => t.key)).toEqual(["general"]);
@@ -192,9 +192,9 @@ describe("buildNav", () => {
       }).map(t => t.key);
       expect(adminOnly).toEqual([
         "general",
+        "people",
         "bulk-script-editor",
         "tags",
-        "people",
         "phone-numbers"
       ]);
       const noPhones = settingsTabs({
