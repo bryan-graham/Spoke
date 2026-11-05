@@ -20,7 +20,9 @@ import { parseShoreUrl } from "./config";
 export const MENU_PATH = "/shore-menu/:organizationId";
 export const MENU_AUDIENCE = "shore:menu";
 export const MENU_TOKEN_SECONDS = 60;
-export const MENU_TIMEOUT_MS = 3000;
+// Shore scales to zero when idle, and its first request after that waits for
+// it to start, which can take several seconds.
+export const MENU_TIMEOUT_MS = 10000;
 
 const str = (value, max = 200) =>
   typeof value === "string" ? value.slice(0, max) : null;
@@ -148,6 +150,14 @@ async function isMember(user, organizationId) {
   return Boolean(row);
 }
 
+// Logged whenever the menu can't be loaded for a passing reason, so it shows in
+// the server logs (the browser keeps the last menu and asks again).
+const logUnavailable = (organizationId, error, details = {}) =>
+  console.warn(
+    "shore: menu unavailable",
+    JSON.stringify({ organizationId, error, ...details })
+  );
+
 const reply = (res, status, body) =>
   res
     .status(status)
@@ -177,6 +187,7 @@ export function menuHandler() {
         config.baseUrl
       }/api/integrations/spoke/${encodeURIComponent(config.campaign)}/menu`;
       let shoreRes;
+      const started = Date.now();
       try {
         shoreRes = await fetch(url, {
           headers: {
@@ -190,6 +201,10 @@ export function menuHandler() {
           redirect: "error"
         });
       } catch (err) {
+        logUnavailable(orgId, "shore_unreachable", {
+          reason: (err && (err.type || err.code || err.name)) || null,
+          ms: Date.now() - started
+        });
         return reply(res, 502, { error: "shore_unreachable" });
       }
       if (shoreRes.status === 401 || shoreRes.status === 403) {
@@ -201,10 +216,17 @@ export function menuHandler() {
         return reply(res, 404, { error: "not_a_shore_member" });
       }
       if (!shoreRes.ok) {
+        logUnavailable(orgId, "shore_error", {
+          status: shoreRes.status,
+          ms: Date.now() - started
+        });
         return reply(res, 502, { error: "shore_error" });
       }
       const menu = cleanMenu(await shoreRes.json().catch(() => null));
       if (!menu) {
+        logUnavailable(orgId, "shore_bad_response", {
+          ms: Date.now() - started
+        });
         return reply(res, 502, { error: "shore_bad_response" });
       }
       return reply(res, 200, menu);

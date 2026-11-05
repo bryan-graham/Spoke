@@ -22,4 +22,14 @@ describe("renderIndex", () => {
       '<link rel="icon" href="https://s3-us-west-1.amazonaws.com/spoke-public/spoke_logo.svg">'
     );
   });
+
+  it("tells the page who is signed in, or nobody", () => {
+    const { html, css, assetMap } = fakeArguments;
+    expect(renderIndex(html, css, assetMap, { userId: 42 })).toContain(
+      'window.SPOKE_USER_ID="42"'
+    );
+    expect(renderIndex(html, css, assetMap)).toContain(
+      "window.SPOKE_USER_ID=null"
+    );
+  });
 });

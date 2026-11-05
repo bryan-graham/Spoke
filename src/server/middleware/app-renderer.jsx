@@ -54,5 +54,5 @@ export default wrap(async (req, res) => {
     res.redirect(302, `/login?nextUrl=${req.path}${query}`);
     return;
   }
-  res.send(renderIndex("", "", assetMap));
+  res.send(renderIndex("", "", assetMap, { userId: req.user && req.user.id }));
 });

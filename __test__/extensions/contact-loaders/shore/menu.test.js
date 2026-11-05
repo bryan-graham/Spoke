@@ -269,7 +269,8 @@ describe("GET /shore-menu/:organizationId", () => {
     expect(res.body).toEqual({ error: "not_a_shore_member" });
   });
 
-  it("reports Shore being down", async () => {
+  it("reports Shore being down, and logs it", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     nock(SHORE)
       .get(MENU_PATH)
       .replyWithError("ECONNREFUSED");
@@ -278,6 +279,15 @@ describe("GET /shore-menu/:organizationId", () => {
       .get(MENU_PATH)
       .reply(500);
     expect((await call(user)).body).toEqual({ error: "shore_error" });
+    expect(warn.mock.calls.map(c => c[0])).toEqual([
+      "shore: menu unavailable",
+      "shore: menu unavailable"
+    ]);
+    expect(JSON.parse(warn.mock.calls[1][1])).toMatchObject({
+      error: "shore_error",
+      status: 500
+    });
+    warn.mockRestore();
   });
 
   it("lets a superadmin outside the organization see it", async () => {

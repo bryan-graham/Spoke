@@ -66,7 +66,10 @@ function faviconLinks(branding) {
   return `<link rel="icon" type="${branding.faviconType}" href="${branding.favicon}">${touch}`;
 }
 
-export default function renderIndex(html, css, assetMap) {
+// userId: the signed-in Spoke user, if any. The browser keys what it remembers
+// for that person (the Shore menu) by it, so one person's copy is never shown
+// to another.
+export default function renderIndex(html, css, assetMap, { userId } = {}) {
   const branding = shoreBranding();
   return `
 <!DOCTYPE html>
@@ -129,6 +132,7 @@ export default function renderIndex(html, css, assetMap) {
       window.SHORE_LOGO_URL=${JSON.stringify((branding && branding.logo) || "")}
       window.PRIVACY_URL="${process.env.PRIVACY_URL || ""}"
       window.BASE_URL="${process.env.BASE_URL || ""}"
+      window.SPOKE_USER_ID=${JSON.stringify(userId ? String(userId) : null)}
       window.NOT_IN_USA=${process.env.NOT_IN_USA || 0}
       window.ALLOW_SEND_ALL=${getConfig("ALLOW_SEND_ALL", null, {
         truthy: 1
