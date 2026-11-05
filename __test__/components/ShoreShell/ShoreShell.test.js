@@ -97,9 +97,10 @@ const render = async ({ roles, menu, path, pending, logo }) => {
       ? new Promise(() => {})
       : Promise.resolve(
           menu
-            ? { ok: true, json: () => Promise.resolve(menu) }
+            ? { ok: true, status: 200, json: () => Promise.resolve(menu) }
             : {
                 ok: false,
+                status: 404,
                 json: () => Promise.resolve({ error: "not_configured" })
               }
         )
@@ -213,7 +214,8 @@ describe("ShoreShell", () => {
     expect(navLabels(wrapper)).toEqual(["My assignments"]);
     const current = wrapper.find('nav a[aria-current="page"]');
     expect(current.text()).toBe("My assignments");
-    expect(wrapper.find('[aria-label="Shore"]').length).toBe(0);
+    expect(wrapper.find('[aria-label="Powered by Shore"]').length).toBe(0);
+    expect(wrapper.text()).not.toContain("POWERED BY");
     // react-router fills in href only inside a router; check the target.
     expect(wrapper.find('Link[aria-current="page"]').prop("to")).toBe(
       "/app/1/todos"
@@ -252,7 +254,10 @@ describe("ShoreShell", () => {
     expect(wrapper.text()).toContain("Admin");
     const inbox = wrapper.find('nav a[href="https://shore.test/o/gotv/inbox"]');
     expect(inbox.text()).toContain("3");
-    expect(wrapper.find('[aria-label="Shore"]').length).toBeGreaterThan(0);
+    expect(
+      wrapper.find('[aria-label="Powered by Shore"]').length
+    ).toBeGreaterThan(0);
+    expect(wrapper.text()).toContain("POWERED BY");
     expect(document.title).toBe("Graham for Providence • Shore • Texting");
     const current = wrapper
       .find('nav a[aria-current="page"]')

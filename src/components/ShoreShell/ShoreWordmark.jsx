@@ -15,7 +15,7 @@ import { fonts, v } from "../../styles/shore-tokens";
 export const logoUrl = () =>
   (typeof window !== "undefined" && window.SHORE_LOGO_URL) || "";
 
-export default function ShoreWordmark({ height, src }) {
+export default function ShoreWordmark({ height, src, label }) {
   const url = src === undefined ? logoUrl() : src;
   // The logo's width/height ratio, from the image itself.
   const [ratio, setRatio] = useState(null);
@@ -41,7 +41,7 @@ export default function ShoreWordmark({ height, src }) {
     return (
       <span
         role="img"
-        aria-label="Shore"
+        aria-label={label}
         style={{
           display: "inline-block",
           height,
@@ -56,7 +56,7 @@ export default function ShoreWordmark({ height, src }) {
 
   return (
     <span
-      aria-label="Shore"
+      aria-label={label}
       style={{
         display: "inline-block",
         color: v("faint"),
@@ -73,5 +73,9 @@ export default function ShoreWordmark({ height, src }) {
   );
 }
 
-ShoreWordmark.propTypes = { height: PropTypes.number, src: PropTypes.string };
-ShoreWordmark.defaultProps = { height: 17 };
+ShoreWordmark.propTypes = {
+  height: PropTypes.number,
+  src: PropTypes.string,
+  label: PropTypes.string
+};
+ShoreWordmark.defaultProps = { height: 17, label: "Shore" };

@@ -126,7 +126,21 @@ const useStyles = makeStyles({
     flexDirection: "column",
     gap: 10
   },
-  mark: { padding: "0 8px" },
+  // Shore's "POWERED BY" mark (web/src/pages/OrgLayout.tsx).
+  mark: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "6px 8px 0",
+    color: v("faint")
+  },
+  poweredBy: {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: "0.08em",
+    lineHeight: 1,
+    userSelect: "none"
+  },
   // The phone top bar is one tap target that opens and closes the menu.
   // It stays above the open menu (which starts below it), so it can close it.
   topBar: {
@@ -134,11 +148,13 @@ const useStyles = makeStyles({
     top: 0,
     zIndex: 1301, // above the menu drawer (MUI drawer: 1200)
     height: layout.phoneTopBar,
+    boxSizing: "border-box",
     display: "flex",
     alignItems: "center",
     gap: 12,
     padding: "0 16px",
     backgroundColor: v("canvas"),
+    borderBottom: `1px solid ${v("border")}`,
     cursor: "pointer",
     userSelect: "none",
     WebkitTapHighlightColor: "transparent",
@@ -148,7 +164,16 @@ const useStyles = makeStyles({
     },
     "@media print": { display: "none" }
   },
-  topBarIcon: { display: "flex", color: v("text") },
+  // The size of Shore's menu button (Mantine Burger, size sm).
+  topBarIcon: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 36,
+    height: 36,
+    flexShrink: 0,
+    color: v("text")
+  },
   drawerBelowBar: {
     top: layout.phoneTopBar,
     height: `calc(100% - ${layout.phoneTopBar}px)`
@@ -191,9 +216,16 @@ const useStyles = makeStyles({
   }
 });
 
+// Shore's sizes (web/src/components/CampaignBrand.tsx): the desktop sidebar
+// and the phone top bar.
+const BRAND_SIZES = {
+  large: { tile: 46, name: 17, initials: 15, wordmark: 56, mark: 46 },
+  small: { tile: 32, name: 14, initials: 12, wordmark: 34, mark: 30 }
+};
+
 export function CampaignBrand({ name, small, logoUrl }) {
   const classes = useStyles();
-  const size = small ? 32 : 46;
+  const scale = small ? BRAND_SIZES.small : BRAND_SIZES.large;
   const shape = useImageShape(logoUrl);
   if (shape.status === "ready" && isWordmark(shape.ratio)) {
     // A wide wordmark stands alone (it already says the name).
@@ -204,8 +236,8 @@ export function CampaignBrand({ name, small, logoUrl }) {
           alt={name}
           style={{
             display: "block",
-            height: small ? 28 : 56,
-            maxWidth: small ? 180 : 220,
+            height: scale.wordmark,
+            maxWidth: 220,
             objectFit: "contain",
             objectPosition: "left center"
           }}
@@ -221,17 +253,14 @@ export function CampaignBrand({ name, small, logoUrl }) {
           src={logoUrl}
           alt=""
           style={{
-            width: size,
-            height: size,
+            width: scale.mark,
+            height: scale.mark,
             borderRadius: 10,
             objectFit: "contain",
             flexShrink: 0
           }}
         />
-        <div
-          className={classes.brandName}
-          style={{ fontSize: small ? 14 : 17 }}
-        >
+        <div className={classes.brandName} style={{ fontSize: scale.name }}>
           {name}
         </div>
       </div>
@@ -242,12 +271,16 @@ export function CampaignBrand({ name, small, logoUrl }) {
     <div className={classes.brand} style={small ? { padding: 0 } : undefined}>
       <div
         className={classes.tile}
-        style={{ width: size, height: size, fontSize: small ? 12 : 15 }}
+        style={{
+          width: scale.tile,
+          height: scale.tile,
+          fontSize: scale.initials
+        }}
         aria-hidden
       >
         {monogram(name)}
       </div>
-      <div className={classes.brandName} style={{ fontSize: small ? 14 : 17 }}>
+      <div className={classes.brandName} style={{ fontSize: scale.name }}>
         {name}
       </div>
     </div>
@@ -302,7 +335,12 @@ export function SidebarContent({
         {/* "Powered by Shore" only when the menu came from Shore. */}
         {shoreConnected ? (
           <div className={classes.mark}>
-            <ShoreWordmark />
+            {/* The logo's label already says "Powered by Shore" to screen
+                readers. */}
+            <span className={classes.poweredBy} aria-hidden>
+              POWERED BY
+            </span>
+            <ShoreWordmark label="Powered by Shore" />
           </div>
         ) : null}
       </div>
@@ -448,9 +486,9 @@ export default function ShoreShell({
             >
               <span className={classes.topBarIcon} aria-hidden>
                 {drawerOpen ? (
-                  <IconX size={22} stroke={layout.iconStroke} />
+                  <IconX size={24} stroke={layout.iconStroke} />
                 ) : (
-                  <IconMenu2 size={22} stroke={layout.iconStroke} />
+                  <IconMenu2 size={24} stroke={layout.iconStroke} />
                 )}
               </span>
               {brandName ? (
