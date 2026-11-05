@@ -13,13 +13,27 @@ export const EXPORT_PATH = "/opt-out-export";
 export const COLUMNS = [
   "opted_out_at",
   "cell",
+  "external_id",
   "first_name",
   "last_name",
   "campaign_id",
   "campaign_title",
   "texter",
-  "reason"
+  "reason",
+  "matched_by"
 ];
+
+// How an opt-out was tied to a contact (the matched_by column), tried in
+// this order:
+// - stop_message: an incoming message from that number within a minute of
+//   the opt-out (almost always "STOP"). A message belongs to exactly one
+//   contact, so this is the most reliable.
+// - assignment: opt-outs a texter entered by hand record their assignment,
+//   so use the contact with that number in that assignment's campaign.
+// - last_inbound: the contact behind the last message that number sent
+//   before opting out.
+export const STOP_WINDOW_MS = 60 * 1000;
+const CHUNK = 500;
 
 export class ExportRangeError extends Error {}
 
@@ -55,19 +69,167 @@ const time = value => {
   return date.getTime();
 };
 
+const chunks = list => {
+  const out = [];
+  for (let i = 0; i < list.length; i += CHUNK) {
+    out.push(list.slice(i, i + CHUNK));
+  }
+  return out;
+};
+
+const CONTACT_FIELDS = [
+  "campaign_contact.id as contact_id",
+  "campaign_contact.campaign_id as contact_campaign_id",
+  "campaign_contact.cell as contact_cell",
+  "campaign_contact.external_id as external_id",
+  "campaign_contact.first_name as first_name",
+  "campaign_contact.last_name as last_name"
+];
+
+// Incoming messages from these numbers to the organization's contacts, sent
+// before `until`, newest first.
+async function inboundMessages(organizationId, cells, until) {
+  const parts = await Promise.all(
+    chunks(cells).map(part => {
+      let query = r
+        .knexReadOnly("message")
+        .join(
+          "campaign_contact",
+          "campaign_contact.id",
+          "message.campaign_contact_id"
+        )
+        .join("campaign", "campaign.id", "campaign_contact.campaign_id")
+        .where("campaign.organization_id", organizationId)
+        .where("message.is_from_contact", true)
+        .whereIn("message.contact_number", part);
+      if (!isSqlite) {
+        query = query.andWhere("message.created_at", "<", until.toISOString());
+      }
+      return query.select(
+        "message.id as message_id",
+        "message.created_at as message_at",
+        "message.contact_number as message_cell",
+        ...CONTACT_FIELDS
+      );
+    })
+  );
+  const found = [].concat(...parts);
+  const limit = until.getTime();
+  return found
+    .filter(m => time(m.message_at) < limit)
+    .sort(
+      (a, b) =>
+        time(b.message_at) - time(a.message_at) || b.message_id - a.message_id
+    );
+}
+
+// The contact with each number in each campaign, keyed "campaign:cell".
+async function campaignContacts(pairs) {
+  const byKey = new Map();
+  const byCampaign = new Map();
+  pairs.forEach(({ campaignId, cell }) => {
+    if (!byCampaign.has(campaignId)) {
+      byCampaign.set(campaignId, new Set());
+    }
+    byCampaign.get(campaignId).add(cell);
+  });
+  const queries = [];
+  byCampaign.forEach((cells, campaignId) => {
+    chunks([...cells]).forEach(part => {
+      queries.push(
+        r
+          .knexReadOnly("campaign_contact")
+          .where("campaign_contact.campaign_id", campaignId)
+          .whereIn("campaign_contact.cell", part)
+          .orderBy("campaign_contact.id", "asc")
+          .select(...CONTACT_FIELDS)
+      );
+    });
+  });
+  const results = await Promise.all(queries);
+  results.forEach(rows => {
+    rows.forEach(row => {
+      const key = `${row.contact_campaign_id}:${row.contact_cell}`;
+      // A number listed twice in a campaign: keep the first.
+      if (!byKey.has(key)) {
+        byKey.set(key, row);
+      }
+    });
+  });
+  return byKey;
+}
+
+const contactPart = contact => ({
+  external_id: contact ? contact.external_id : null,
+  first_name: contact ? contact.first_name : null,
+  last_name: contact ? contact.last_name : null
+});
+
+export async function matchContacts(organizationId, optOuts) {
+  if (!optOuts.length) {
+    return [];
+  }
+  const cells = [...new Set(optOuts.map(row => row.cell).filter(Boolean))];
+  const latest = optOuts.reduce(
+    (most, row) => Math.max(most, time(row.created_at)),
+    0
+  );
+  const messages = await inboundMessages(
+    organizationId,
+    cells,
+    new Date(latest + STOP_WINDOW_MS + 1)
+  );
+  const messagesByCell = new Map();
+  messages.forEach(m => {
+    if (!messagesByCell.has(m.message_cell)) {
+      messagesByCell.set(m.message_cell, []);
+    }
+    messagesByCell.get(m.message_cell).push(m);
+  });
+  const byCampaign = await campaignContacts(
+    optOuts
+      .filter(row => row.campaign_id && row.cell)
+      .map(row => ({ campaignId: row.campaign_id, cell: row.cell }))
+  );
+
+  return optOuts.map(row => {
+    const at = time(row.created_at);
+    const sent = messagesByCell.get(row.cell) || [];
+    // 1. The incoming message closest to the opt-out, within a minute.
+    let stop = null;
+    sent.forEach(m => {
+      const gap = Math.abs(time(m.message_at) - at);
+      if (
+        gap <= STOP_WINDOW_MS &&
+        (!stop || gap < Math.abs(time(stop.message_at) - at))
+      ) {
+        stop = m;
+      }
+    });
+    if (stop) {
+      return { ...row, ...contactPart(stop), matched_by: "stop_message" };
+    }
+    // 2. The number in the campaign of the assignment it was entered from.
+    const assigned =
+      row.campaign_id && byCampaign.get(`${row.campaign_id}:${row.cell}`);
+    if (assigned) {
+      return { ...row, ...contactPart(assigned), matched_by: "assignment" };
+    }
+    // 3. The last message the number sent before opting out (newest first).
+    const last = sent.find(m => time(m.message_at) <= at);
+    if (last) {
+      return { ...row, ...contactPart(last), matched_by: "last_inbound" };
+    }
+    return { ...row, ...contactPart(null), matched_by: "" };
+  });
+}
+
 export async function getOptOuts(organizationId, { start, end }) {
   let query = r
     .knexReadOnly("opt_out")
     .leftJoin("assignment", "assignment.id", "opt_out.assignment_id")
     .leftJoin("campaign", "campaign.id", "assignment.campaign_id")
     .leftJoin("user", "user.id", "assignment.user_id")
-    .leftJoin("campaign_contact", function joinContact() {
-      this.on(
-        "campaign_contact.campaign_id",
-        "=",
-        "assignment.campaign_id"
-      ).andOn("campaign_contact.cell", "=", "opt_out.cell");
-    })
     .where("opt_out.organization_id", organizationId);
   if (!isSqlite) {
     query = query
@@ -85,9 +247,7 @@ export async function getOptOuts(organizationId, { start, end }) {
       "campaign.id as campaign_id",
       "campaign.title as campaign_title",
       "user.first_name as texter_first_name",
-      "user.last_name as texter_last_name",
-      "campaign_contact.first_name as first_name",
-      "campaign_contact.last_name as last_name"
+      "user.last_name as texter_last_name"
     );
   // SQLite (development) keeps times in more than one format, so the range
   // is applied here rather than in SQL.
@@ -100,21 +260,14 @@ export async function getOptOuts(organizationId, { start, end }) {
         )
         .sort((a, b) => time(a.created_at) - time(b.created_at) || a.id - b.id)
     : rows;
-  // A number listed twice in a campaign would repeat its opt-out: keep one.
-  const seen = new Set();
-  return inRange.filter(row => {
-    if (seen.has(row.id)) {
-      return false;
-    }
-    seen.add(row.id);
-    return true;
-  });
+  return matchContacts(organizationId, inRange);
 }
 
 export function toCsv(rows) {
   const data = rows.map(row => [
     new Date(row.created_at).toISOString(),
     row.cell || "",
+    safeText(row.external_id),
     safeText(row.first_name),
     safeText(row.last_name),
     row.campaign_id || "",
@@ -122,7 +275,8 @@ export function toCsv(rows) {
     safeText(
       [row.texter_first_name, row.texter_last_name].filter(Boolean).join(" ")
     ),
-    safeText(row.reason_code)
+    safeText(row.reason_code),
+    row.matched_by || ""
   ]);
   return Papa.unparse({ fields: COLUMNS, data });
 }

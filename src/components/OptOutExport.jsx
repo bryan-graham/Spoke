@@ -143,7 +143,8 @@ export default function OptOutExport({ organizationId, today }) {
       <div className={classes.title}>Export opt-outs</div>
       <div className={classes.lead}>
         A CSV of everyone opted out between these dates (both included): when,
-        their number and name, the campaign, the texter and the reason.
+        their number, external ID and name, the campaign, the texter, the
+        reason, and how the opt-out was matched to the contact.
       </div>
       <div className={classes.row}>
         <TextField
